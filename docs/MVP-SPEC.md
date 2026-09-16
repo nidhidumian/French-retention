@@ -17,7 +17,7 @@ Home (dump + notes by date) · Note detail · Vocab/Verbs/Grammar · Quiz · Set
 MacBook Air 13" and iPhone 14 Pro Max (responsive)
 
 ## Stack intent
-GitHub source of truth · Cursor agents later · Resend · traces on extract / SRS / email→quiz
+TypeScript · Next.js · SQLite · Resend · GitHub source of truth · traces on extract / SRS / email→quiz
 
 ## Out of scope for v1
 Speaking/writing/listening tests · curriculum · design polish · heavy analytics

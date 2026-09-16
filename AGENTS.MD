@@ -96,7 +96,8 @@ infrastructure (stubs, fixtures), and anything that can't be tested locally.
 **Traces:** extract, SRS schedule, email→quiz paths.
 **Owner:** directs product, does not write code; PRs explain tradeoffs in plain language.
 **Out of scope until asked:** speaking/writing/listening tests, curriculum generation.
-**Checks:** *(fill in after the app stack exists — e.g. lint / test / build)*
+**Stack:** TypeScript, Next.js, SQLite, Resend.
+**Checks:** `npm test` · `npm run lint` · `npm run build`
 
 ## Skill sources
 
