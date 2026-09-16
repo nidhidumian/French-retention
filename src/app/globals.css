@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  /* Design system — docs/DESIGN.md */
+  --color-maroon: #2a0b16; /* deep maroon / eggplant canvas */
+  --color-surface: #3b1220; /* cards: slightly lighter maroon */
+  --color-surface-raised: #48172a; /* hover / raised cards */
+  --color-cream: #f6ecdd; /* warm off-white body text */
+  --color-cream-dim: #d9c7b6; /* secondary body text */
+  --color-pink: #efa7bc; /* dusty pink / mauve headings + labels */
+  --color-pink-dim: #c98aa0;
+  --color-coral: #f0654a; /* optional highlight */
+  --color-edge: rgba(239, 167, 188, 0.28); /* thin light/pinkish borders */
+  --color-edge-strong: rgba(239, 167, 188, 0.55);
+
+  --font-sans: var(--font-grotesk), "Avenir Next", "Futura", system-ui,
+    sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-tile: 1.75rem;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-maroon);
+  color: var(--color-cream);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Small-caps utility label, per DESIGN.md typography */
+.label-caps {
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.14em;
+}
