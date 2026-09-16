@@ -207,6 +207,12 @@ function HomeCard({
   icon: React.ReactNode;
   onClick: () => void;
 }) {
+  const badgePill = badge !== undefined && (
+    <span className="mono-label whitespace-nowrap rounded-full bg-pink-pale px-2.5 py-1 text-[0.66rem] text-surface">
+      {badge}
+    </span>
+  );
+
   return (
     <button
       type="button"
@@ -214,8 +220,16 @@ function HomeCard({
       className="group block w-full rounded-card border border-edge bg-surface px-5 py-5 text-left transition-colors hover:border-pink-hot/60 hover:bg-surface-raised sm:px-7 sm:py-6"
     >
       <div className="flex flex-col gap-4 sm:grid sm:grid-cols-[5rem_minmax(0,11rem)_1fr] sm:gap-6">
-        <span className="mono-label pt-0.5 text-[0.72rem] text-pink-hot">
-          {tag}
+        {/* On mobile the icon + badge sit on the tag row so the description
+            keeps the full card width; on desktop they move to the right. */}
+        <span className="flex items-center justify-between sm:block sm:pt-0.5">
+          <span className="mono-label text-[0.72rem] text-pink-hot">
+            {tag}
+          </span>
+          <span className="flex items-center gap-3 text-pink sm:hidden">
+            {badgePill}
+            {icon}
+          </span>
         </span>
         <span className="flex flex-col gap-1">
           <span className="text-xl font-bold tracking-tight text-pink-pale">
@@ -229,13 +243,9 @@ function HomeCard({
           <span className="max-w-md text-[1.02rem] leading-relaxed text-cream">
             {description}
           </span>
-          <span className="flex shrink-0 flex-col items-end gap-2 text-pink transition-transform group-hover:translate-x-0.5">
+          <span className="hidden shrink-0 flex-col items-end gap-2 text-pink transition-transform group-hover:translate-x-0.5 sm:flex">
             {icon}
-            {badge !== undefined && (
-              <span className="mono-label whitespace-nowrap rounded-full bg-pink-pale px-2.5 py-1 text-[0.66rem] text-surface">
-                {badge}
-              </span>
-            )}
+            {badgePill}
           </span>
         </span>
       </div>
