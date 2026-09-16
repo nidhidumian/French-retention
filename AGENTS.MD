@@ -87,6 +87,17 @@ the beats there: commands & checks, hard invariants (security and
 architecture rules), an environment quick reference, local test
 infrastructure (stubs, fixtures), and anything that can't be tested locally.
 
+## Repo-specific — French retention
+
+**Product:** personal French retention app (not a tutor).
+**MVP loop:** dump notes → correct + extract (vocab m/f/plural, grammar, verbs + conjugations/phonetics) → SRS → Resend email → 10-card typed quiz.
+**Targets:** responsive MacBook Air 13" and iPhone 14 Pro Max.
+**Email:** Resend (`RESEND_API_KEY`).
+**Traces:** extract, SRS schedule, email→quiz paths.
+**Owner:** directs product, does not write code; PRs explain tradeoffs in plain language.
+**Out of scope until asked:** speaking/writing/listening tests, curriculum generation.
+**Checks:** *(fill in after the app stack exists — e.g. lint / test / build)*
+
 ## Skill sources
 
 | Skill | Source |
