@@ -14,11 +14,24 @@ Reference: Nidhi’s Field Notes / ICAN dark editorial pages (maroon canvas, pin
 Personal iOS home screen on a maroon field. Not a dense dashboard.
 
 ## Navigation
-Bottom dock (MacBook + iPhone), styled like the PLAN/BUILD/TEST/MERGE rounded cards:
+Bottom dock (MacBook + iPhone), macOS-Finder style: icons only, no permanent
+labels. Hovering (or pressing/focusing on touch) shows the section name in a
+small rounded tooltip above the icon; the active section gets a pink tint and
+a Finder-style dot under the icon.
 1. Notes
 2. Vocabulary
 3. Verbs
 4. Grammar
+5. Quiz
+
+## Icons
+Lucide (`lucide-react`), cream/pink stroke:
+- Notes: `NotebookPen`
+- Vocabulary: `BookOpen`
+- Verbs: `Zap`
+- Grammar: `ListTree`
+- Quiz: `Layers`
+- Settings: `Settings` (gear, top right)
 
 ### Notes section
 - Icon A: Add note (opens dump)
@@ -28,4 +41,6 @@ Bottom dock (MacBook + iPhone), styled like the PLAN/BUILD/TEST/MERGE rounded ca
 One design system; layout contracts for iPhone 14 Pro Max and expands for MacBook Air 13" Safari. Same dock, same icons, same colours.
 
 ## Typography
-Clean geometric sans. Bold pink headings; cream body; small caps labels where useful.
+Field Notes editorial direction: Inter Tight (Google font). Headings extra
+bold with tight tracking in dusty pink; body warm cream, relaxed leading;
+small caps labels where useful. Magazine copy tone, not UI-chrome tone.

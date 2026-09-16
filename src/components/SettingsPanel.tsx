@@ -1,6 +1,6 @@
 "use client";
 
-import { CloseIcon } from "./icons";
+import { X } from "lucide-react";
 
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   return (
@@ -15,14 +15,16 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
-          <h2 className="text-xl font-bold text-pink">Settings</h2>
+          <h2 className="text-2xl font-extrabold tracking-tight text-pink">
+            Settings
+          </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close settings"
             className="rounded-full border border-edge p-1.5 text-cream-dim transition-colors hover:text-cream"
           >
-            <CloseIcon className="h-4 w-4" />
+            <X strokeWidth={1.7} className="h-4 w-4" />
           </button>
         </div>
 
@@ -30,7 +32,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           <p className="label-caps text-xs font-semibold text-pink-dim">
             Email hours
           </p>
-          <p className="mt-1.5 text-sm text-cream-dim">
+          <p className="mt-1.5 text-sm leading-relaxed text-cream-dim">
             Pick the window when your daily quiz email arrives.
           </p>
           <p className="mt-3 inline-block rounded-full border border-edge px-3 py-1 text-xs text-pink">

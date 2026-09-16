@@ -1,18 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { BookOpen, Layers, ListTree, Settings, Zap } from "lucide-react";
 import { Dock } from "./Dock";
 import { NotesView } from "./NotesView";
 import { PlaceholderView } from "./PlaceholderView";
 import { SettingsPanel } from "./SettingsPanel";
 import type { Section } from "./sections";
-import {
-  BoltIcon,
-  CardsIcon,
-  GearIcon,
-  LayersIcon,
-  WordIcon,
-} from "./icons";
 
 const PLACEHOLDERS: Record<
   Exclude<Section, "notes">,
@@ -21,26 +15,26 @@ const PLACEHOLDERS: Record<
   vocabulary: {
     title: "Vocabulary",
     description:
-      "Words pulled from your notes, with gender (m/f) and plurals. Extraction lands in the next milestone.",
-    icon: <WordIcon className="h-11 w-11" />,
+      "Every word your notes give up — gender, plural, the lot. Extraction arrives in the next milestone.",
+    icon: <BookOpen strokeWidth={1.5} className="h-11 w-11" />,
   },
   verbs: {
     title: "Verbs",
     description:
-      "Conjugations and phonetics for the verbs you meet in your notes. Extraction lands in the next milestone.",
-    icon: <BoltIcon className="h-11 w-11" />,
+      "Conjugations and phonetics for the verbs you actually meet. Extraction arrives in the next milestone.",
+    icon: <Zap strokeWidth={1.5} className="h-11 w-11" />,
   },
   grammar: {
     title: "Grammar",
     description:
-      "Grammar points spotted in your notes, with short corrections and whys. Extraction lands in the next milestone.",
-    icon: <LayersIcon className="h-11 w-11" />,
+      "The rules hiding in your notes, each with a short why. Extraction arrives in the next milestone.",
+    icon: <ListTree strokeWidth={1.5} className="h-11 w-11" />,
   },
   quiz: {
     title: "Quiz",
     description:
-      "Ten-card typed sessions driven by spaced repetition — forgot comes back sooner, remembered later. Coming after extraction.",
-    icon: <CardsIcon className="h-11 w-11" />,
+      "Ten typed cards a day. Forget one and it comes back sooner; remember it and it drifts later. Coming after extraction.",
+    icon: <Layers strokeWidth={1.5} className="h-11 w-11" />,
   },
 };
 
@@ -55,9 +49,15 @@ export function AppShell() {
           type="button"
           onClick={() => setSettingsOpen(true)}
           aria-label="Open settings"
-          className="rounded-full border border-edge bg-surface/80 p-2.5 text-pink-dim backdrop-blur-md transition-colors hover:border-edge-strong hover:text-pink"
+          className="group relative rounded-full border border-edge bg-surface/80 p-2.5 text-pink-dim backdrop-blur-md transition-colors hover:border-edge-strong hover:text-pink"
         >
-          <GearIcon className="h-5 w-5" />
+          <span
+            role="tooltip"
+            className="pointer-events-none absolute -bottom-10 right-0 whitespace-nowrap rounded-lg border border-edge bg-surface px-2.5 py-1 text-xs font-semibold tracking-wide text-pink opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100"
+          >
+            Settings
+          </span>
+          <Settings strokeWidth={1.7} className="h-[1.35rem] w-[1.35rem]" />
         </button>
       </header>
 

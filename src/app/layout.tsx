@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk } from "next/font/google";
+import { Inter_Tight } from "next/font/google";
 import "./globals.css";
 
-const grotesk = Space_Grotesk({
+const interTight = Inter_Tight({
   subsets: ["latin"],
-  variable: "--font-grotesk",
+  variable: "--font-inter-tight",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={grotesk.variable}>
+    <html lang="en" className={interTight.variable}>
       <body>{children}</body>
     </html>
   );

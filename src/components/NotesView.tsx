@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChevronLeft, Library, Plus, Trash2 } from "lucide-react";
 import {
   addNote,
   deleteNote,
   listNotes,
   type Note,
 } from "@/services/notes";
-import { BackIcon, BookIcon, PlusIcon, TrashIcon } from "./icons";
 
 type NotesScreen = "home" | "add" | "library";
 
@@ -52,12 +52,12 @@ export function NotesView() {
     return (
       <section className="mx-auto w-full max-w-2xl">
         <BackButton onClick={() => setScreen("home")} />
-        <h1 className="mt-4 text-3xl font-bold text-pink sm:text-4xl">
+        <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-pink sm:text-5xl">
           Dump a note
         </h1>
-        <p className="mt-2 text-sm text-cream-dim">
-          Anything from today&apos;s French — phrases, corrections, words you
-          met. Saved on this device for now.
+        <p className="mt-3 max-w-md text-[0.95rem] leading-relaxed text-cream-dim">
+          Whatever today&apos;s French left behind — a phrase, a correction, a
+          word that surprised you. It stays on this device for now.
         </p>
         <textarea
           value={draft}
@@ -71,7 +71,7 @@ export function NotesView() {
           <button
             type="button"
             onClick={handleSave}
-            className="rounded-full bg-pink px-6 py-2.5 text-sm font-bold text-maroon transition-opacity hover:opacity-90"
+            className="rounded-full bg-pink px-6 py-2.5 text-sm font-bold tracking-tight text-maroon transition-opacity hover:opacity-90"
           >
             Save note
           </button>
@@ -96,7 +96,7 @@ export function NotesView() {
       <section className="mx-auto w-full max-w-2xl">
         <BackButton onClick={() => setScreen("home")} />
         <div className="mt-4 flex items-baseline gap-3">
-          <h1 className="text-3xl font-bold text-pink sm:text-4xl">
+          <h1 className="text-4xl font-extrabold tracking-tight text-pink sm:text-5xl">
             Notes library
           </h1>
           <span className="rounded-full bg-pink px-2.5 py-0.5 text-sm font-bold text-maroon">
@@ -104,7 +104,7 @@ export function NotesView() {
           </span>
         </div>
         {notes.length === 0 ? (
-          <p className="mt-6 rounded-card border border-edge bg-surface p-6 text-sm text-cream-dim">
+          <p className="mt-6 rounded-card border border-edge bg-surface p-6 text-sm leading-relaxed text-cream-dim">
             Nothing here yet. Dump your first note and it will show up by
             date.
           </p>
@@ -125,7 +125,7 @@ export function NotesView() {
                     aria-label="Delete note"
                     className="text-cream-dim/50 transition-colors hover:text-coral"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <Trash2 strokeWidth={1.7} className="h-4 w-4" />
                   </button>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-[0.95rem] leading-relaxed text-cream">
@@ -142,29 +142,31 @@ export function NotesView() {
   return (
     <section className="mx-auto w-full max-w-2xl">
       <p className="label-caps text-sm font-semibold text-pink-dim">
-        French retention
+        French retention · field notes
       </p>
-      <h1 className="mt-1 text-3xl font-bold text-pink sm:text-4xl">Notes</h1>
-      <p className="mt-2 max-w-md text-sm text-cream-dim">
-        Dump what you learned; the app will turn it into vocab, verbs and
-        grammar to retain.
+      <h1 className="mt-1 text-4xl font-extrabold tracking-tight text-pink sm:text-5xl">
+        Notes
+      </h1>
+      <p className="mt-3 max-w-md text-[0.95rem] leading-relaxed text-cream-dim">
+        Everything you meet in French lands here first. The app turns it into
+        vocab, verbs and grammar worth keeping.
       </p>
 
       <div className="mt-8 grid grid-cols-2 gap-4 sm:mt-10 sm:gap-5">
         <HomeTile
           label="Add note"
-          hint="Open the dump"
+          hint="Dump today's French"
           onClick={() => setScreen("add")}
         >
-          <PlusIcon className="h-9 w-9 sm:h-10 sm:w-10" />
+          <Plus strokeWidth={1.5} className="h-9 w-9 sm:h-10 sm:w-10" />
         </HomeTile>
         <HomeTile
           label="Notes library"
-          hint="Saved by date"
+          hint="By date, newest first"
           onClick={() => setScreen("library")}
           badge={notes.length}
         >
-          <BookIcon className="h-9 w-9 sm:h-10 sm:w-10" />
+          <Library strokeWidth={1.5} className="h-9 w-9 sm:h-10 sm:w-10" />
         </HomeTile>
       </div>
     </section>
@@ -197,7 +199,7 @@ function HomeTile({
       )}
       {children}
       <span className="flex flex-col items-center gap-0.5">
-        <span className="text-base font-bold text-cream sm:text-lg">
+        <span className="text-lg font-bold tracking-tight text-cream sm:text-xl">
           {label}
         </span>
         <span className="label-caps text-xs text-pink-dim">{hint}</span>
@@ -211,9 +213,9 @@ function BackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 text-sm font-semibold text-pink-dim transition-colors hover:text-pink"
+      className="flex items-center gap-1 text-sm font-semibold text-pink-dim transition-colors hover:text-pink"
     >
-      <BackIcon className="h-4 w-4" />
+      <ChevronLeft strokeWidth={1.7} className="h-4 w-4" />
       Notes
     </button>
   );
