@@ -49,11 +49,11 @@ export function AppShell() {
           type="button"
           onClick={() => setSettingsOpen(true)}
           aria-label="Open settings"
-          className="group relative rounded-full border border-edge bg-surface/80 p-2.5 text-pink-dim backdrop-blur-md transition-colors hover:border-edge-strong hover:text-pink"
+          className="tooltip-trigger relative rounded-full border border-edge bg-surface/80 p-2.5 text-pink-dim backdrop-blur-md transition-colors hover:border-edge-strong hover:text-pink"
         >
           <span
             role="tooltip"
-            className="pointer-events-none absolute -bottom-10 right-0 whitespace-nowrap rounded-lg border border-edge bg-surface px-2.5 py-1 text-xs font-semibold tracking-wide text-pink opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100"
+            className="tooltip absolute -bottom-10 right-0 whitespace-nowrap rounded-lg border border-edge bg-surface px-2.5 py-1 text-xs font-semibold tracking-wide text-pink shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
           >
             Settings
           </span>

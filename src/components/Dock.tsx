@@ -45,7 +45,7 @@ export function Dock({
               onClick={() => onSelect(id)}
               aria-label={label}
               aria-current={isActive ? "page" : undefined}
-              className={`group relative flex h-[52px] w-[52px] flex-col items-center justify-center rounded-[0.9rem] border transition-colors sm:h-14 sm:w-14 ${
+              className={`tooltip-trigger relative flex h-[52px] w-[52px] flex-col items-center justify-center rounded-[0.9rem] border transition-colors sm:h-14 sm:w-14 ${
                 isActive
                   ? "border-edge-strong bg-surface-raised text-pink"
                   : "border-transparent text-cream-dim hover:border-edge hover:bg-surface-raised/60 hover:text-cream active:border-edge active:text-pink"
@@ -53,7 +53,7 @@ export function Dock({
             >
               <span
                 role="tooltip"
-                className="pointer-events-none absolute -top-11 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-edge bg-surface px-2.5 py-1 text-xs font-semibold tracking-wide text-pink opacity-0 shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-opacity duration-100 group-hover:opacity-100 group-focus-visible:opacity-100 group-active:opacity-100"
+                className="tooltip absolute -top-11 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg border border-edge bg-surface px-2.5 py-1 text-xs font-semibold tracking-wide text-pink shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
               >
                 {label}
               </span>

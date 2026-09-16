@@ -39,3 +39,18 @@ body {
   font-variant-caps: all-small-caps;
   letter-spacing: 0.14em;
 }
+
+/* Finder-style tooltip: hidden until its trigger is hovered, pressed, or
+   keyboard-focused. Plain :hover (no hover-capability media query) so it
+   also works in virtualized/test browsers that report `hover: none`. */
+.tooltip {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease;
+}
+
+.tooltip-trigger:hover .tooltip,
+.tooltip-trigger:focus-visible .tooltip,
+.tooltip-trigger:active .tooltip {
+  opacity: 1;
+}
