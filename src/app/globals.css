@@ -1,25 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  /* Design system — docs/DESIGN.md */
-  --color-maroon: #2a0b16; /* deep maroon / eggplant canvas */
-  --color-surface: #3b1220; /* cards: slightly lighter maroon */
-  --color-surface-raised: #48172a; /* hover / raised cards */
-  --color-cream: #f6ecdd; /* warm off-white body text */
-  --color-cream-dim: #d9c7b6; /* secondary body text */
-  --color-pink: #efa7bc; /* dusty pink / mauve headings + labels */
-  --color-pink-dim: #c98aa0;
-  --color-coral: #f0654a; /* optional highlight */
-  --color-edge: rgba(239, 167, 188, 0.28); /* thin light/pinkish borders */
-  --color-edge-strong: rgba(239, 167, 188, 0.55);
+  /* Design system — docs/DESIGN.md.
+     Every colour below is sampled from the owner's Field Notes pages. */
+  --color-maroon: #270911; /* page canvas */
+  --color-surface: #3b101b; /* cards: slightly lighter maroon */
+  --color-surface-raised: #4a1522; /* hover / pressed cards */
+  --color-cream: #fef9fc; /* body text: warm near-white */
+  --color-cream-dim: #c8b8bd; /* muted mono subtitles, secondary copy */
+  --color-pink: #e8abc7; /* dusty pink display headings */
+  --color-pink-hot: #e086ae; /* kickers, small mono labels */
+  --color-pink-pale: #efc6d8; /* card titles, pill backgrounds */
+  --color-quote: #f8d6e4; /* italic pull-quote text */
+  --color-coral: #ed6a50; /* accent bar */
+  --color-edge: #724754; /* thin hairline card borders */
+  --color-edge-soft: rgba(114, 71, 84, 0.55); /* dividers, quiet borders */
 
-  /* Field Notes editorial type: Inter Tight — bold tight-tracked titles,
-     readable body. */
-  --font-sans: var(--font-inter-tight), "Avenir Next", "Futura", system-ui,
-    sans-serif;
+  /* Field Notes editorial type: geometric Futura-style display + body (Jost),
+     typewriter monospace for kickers, tags and numbers (IBM Plex Mono). */
+  --font-sans: var(--font-jost), "Futura", "Avenir Next", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), "SF Mono", "Menlo", monospace;
 
-  --radius-card: 1.25rem;
-  --radius-tile: 1.75rem;
+  --radius-card: 1.1rem;
 }
 
 html,
@@ -34,10 +36,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Small-caps utility label, per DESIGN.md typography */
-.label-caps {
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.14em;
+/* Monospace editorial label: FIRST-PERSON ACCOUNT / PLAN / THE PLANNER */
+.mono-label {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Hairline rule, as between contents rows on the reference pages */
+.hairline {
+  border-color: var(--color-edge-soft);
 }
 
 /* Finder-style tooltip: hidden until its trigger is hovered, pressed, or

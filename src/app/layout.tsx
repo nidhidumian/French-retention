@@ -1,10 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Inter_Tight } from "next/font/google";
+import { IBM_Plex_Mono, Jost } from "next/font/google";
 import "./globals.css";
 
-const interTight = Inter_Tight({
+const jost = Jost({
   subsets: ["latin"],
-  variable: "--font-inter-tight",
+  variable: "--font-jost",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-mono",
 });
 
 export const metadata: Metadata = {
@@ -14,14 +20,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2a0b16",
+  themeColor: "#270911",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={interTight.variable}>
+    <html lang="en" className={`${jost.variable} ${plexMono.variable}`}>
       <body>{children}</body>
     </html>
   );
