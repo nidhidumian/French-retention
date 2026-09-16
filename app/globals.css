@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #2a0b16;
+  --surface: #3c1320;
+  --surface-2: #4a1928;
+  --cream: #f6ede4;
+  --pink: #efa7bc;
+  --coral: #e36a4a;
+  --line: rgb(246 237 228 / 0.22);
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-cream: var(--cream);
+  --color-pink: var(--pink);
+  --color-coral: var(--coral);
+  --color-line: var(--line);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--canvas);
+  color: var(--cream);
+}
+
+::selection {
+  background: var(--pink);
+  color: var(--canvas);
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+}

@@ -19,6 +19,9 @@ Bottom dock (MacBook + iPhone), styled like the PLAN/BUILD/TEST/MERGE rounded ca
 2. Vocabulary
 3. Verbs
 4. Grammar
+5. Quiz (revise session)
+
+Settings is a small gear top-right (email hours / Resend), not a 6th dock pin.
 
 ### Notes section
 - Icon A: Add note (opens dump)
