@@ -10,7 +10,7 @@ Requires Node 20+.
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in the Clerk + Gemini keys (next sections)
+cp .env.example .env.local   # then fill in the Clerk + Mistral keys (next sections)
 npm run dev
 ```
 
@@ -71,41 +71,44 @@ Clerk's frontend API reject or misroute requests, which surfaces as broken
 sign-in/sign-up on an app that builds and renders fine. If sign-up fails
 only on the deployed site, check this first.
 
-## Set up Google Gemini (extraction)
+## Set up Mistral (extraction)
 
-Saving a note automatically sends it to `/api/extract`, which uses Google
-Gemini to correct the French and pull out vocabulary, verbs and grammar —
-there is no Extract button; if a run fails, the note keeps a **Try again**
-action in the library. This needs one key, and Google AI Studio gives one
-away free:
+Saving a note automatically sends it to `/api/extract`, which uses Mistral
+(a French-first AI provider) to correct the French and pull out vocabulary,
+verbs and grammar — there is no Extract button; if a run fails, the note
+keeps a **Try again** action in the library. This needs one key, and
+Mistral gives one away free:
 
-1. Go to [aistudio.google.com](https://aistudio.google.com), sign in with a
-   Google account, and click **Get API key** → **Create API key**. Copy the
-   key (starts with `AIza`). The free tier is plenty for personal use — no
-   card needed.
-2. Locally: add `GEMINI_API_KEY=AIza...` to `.env.local` and restart
+1. Go to [console.mistral.ai](https://console.mistral.ai), sign up, and
+   under **API Keys** click **Create new key**. Copy the key. The free tier
+   is plenty for personal use — no card needed.
+2. Locally: add `MISTRAL_API_KEY=...` to `.env.local` and restart
    `npm run dev`.
 3. On Vercel: open the project → **Settings → Environment Variables**, add
-   `GEMINI_API_KEY` with the key as its value (Production and Preview), and
+   `MISTRAL_API_KEY` with the key as its value (Production and Preview), and
    **redeploy** — environment changes only apply to new deployments.
 
 The key stays server-side (`src/app/api/extract/route.ts`); it is never
-sent to the browser. If you already have the key under the name
-`GOOGLE_GENERATIVE_AI_API_KEY` (the Vercel AI SDK's spelling), that works
-too. Optional: set `GEMINI_MODEL` to override the default
-(`gemini-3.6-flash`) — pick a model that supports `generateContent` with
-JSON-schema structured output. If a model is briefly overloaded the route
-retries automatically, and if a model id stops existing it falls back to
-`gemini-flash-latest` on its own.
+sent to the browser. Optional: set `MISTRAL_MODEL` to override the default
+(`mistral-small-latest`). If Mistral is briefly overloaded the route
+retries automatically before showing an error.
+
+**Google Gemini (optional backup):** if a `GEMINI_API_KEY` (or
+`GOOGLE_GENERATIVE_AI_API_KEY`) is also set, the route silently falls back
+to Gemini when Mistral fails — and keeps extraction working on Gemini alone
+until you add the Mistral key. Gemini is no longer required; it is safe to
+remove its key once `MISTRAL_API_KEY` is in place. `GEMINI_MODEL` overrides
+the backup model (default `gemini-3.6-flash`, falling back to
+`gemini-flash-latest` if that id ever retires).
 
 **If extraction fails on Vercel:** environment-variable changes (adding
-`GEMINI_API_KEY`, changing `GEMINI_MODEL`) only take effect after a
+`MISTRAL_API_KEY`, changing `MISTRAL_MODEL`) only take effect after a
 **Redeploy** — trigger one from the Deployments tab. If it still fails
 after redeploying, open the project's **Logs** (or Observability →
 Functions) and filter for `/api/extract`: the route logs the real upstream
-Gemini error (`[extract] Gemini call failed: …`), e.g. an invalid model
-name or an API key restriction, and the same sanitized detail is shown in
-the app under the "hiccup" message.
+error (`[extract] Model call failed: …`), e.g. an invalid model name or an
+API key restriction, and the same sanitized detail is shown in the app
+under the "hiccup" message.
 
 To retest after adding the key: sign in, dump a sample note such as
 
@@ -115,8 +118,8 @@ and save it. Extraction starts on its own: you should see a corrected
 version (au → à la, baguette → baguettes) with a short English why for each
 fix, and new entries under Vocabulary, Verbs and Grammar in the dock.
 Without the key, the same flow shows a message telling you to add
-`GEMINI_API_KEY` — the note stays saved, so you can retry it later from the
-notes library.
+`MISTRAL_API_KEY` — the note stays saved, so you can retry it later from
+the notes library.
 
 ## What exists today
 
@@ -152,7 +155,8 @@ Not built yet: spaced repetition, quiz sessions, Resend email.
 - `src/app/` — Next.js pages: the app (`page.tsx`), auth (`welcome`,
   `sign-in`, `sign-up`), `onboarding`, `terms`, `privacy`. Design tokens
   live in `globals.css`. `api/extract` is the server route that calls
-  Google Gemini (signed-in users only; the key never reaches the browser).
+  Mistral, with Gemini as an optional backup (signed-in users only; the
+  keys never reach the browser).
 - `src/middleware.ts` — Clerk route protection: signed-out users only see
   the auth pages.
 - `src/components/` — shell UI (dock, notes, vocabulary, verbs, grammar,

@@ -13,8 +13,8 @@ import { mergeGrammar } from "./grammar";
  * Extraction service — turns one dumped note into corrections plus new
  * vocabulary, verb and grammar entries.
  *
- * The LLM call lives server-side in /api/extract (the Gemini key never
- * reaches the browser). This module owns the client half: call the API,
+ * The LLM call lives server-side in /api/extract (API keys never reach
+ * the browser). This module owns the client half: call the API,
  * merge the results into the per-user libraries, and stamp the note with
  * its correction receipt.
  */
@@ -97,12 +97,13 @@ export async function extractNote(
     } catch {
       // Non-JSON error body; fall through to the generic message.
     }
-    // The server already retried transient failures; if Google is still
-    // overloaded, say so calmly instead of a scary generic error.
-    if (detail && /503|high demand|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(detail)) {
+    // The server already retried transient failures (and fell back across
+    // providers); if the AI is still overloaded, say so calmly instead of a
+    // scary generic error.
+    if (detail && /503|high demand|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED|capacity|rate limit/i.test(detail)) {
       return {
         ok: false,
-        error: "Google's AI is busy right now — tap Try again in a moment.",
+        error: "The AI service is busy right now — tap Try again in a moment.",
         missingKey: false,
       };
     }
