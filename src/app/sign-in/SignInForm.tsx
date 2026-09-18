@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSignIn } from "@clerk/nextjs";
 import { AuthShell } from "@/components/AuthShell";
 import {
   Field,
   FormError,
+  FormNotice,
   PrimaryButton,
   TextInput,
 } from "@/components/formControls";
@@ -21,6 +22,9 @@ import { clerkErrorMessage } from "@/services/clerkErrors";
 export function SignInForm() {
   const router = useRouter();
   const { signIn } = useSignIn();
+  // Sign-up sends people here with ?notice=account-ready when the account
+  // was created and verified but Clerk didn't hand back a session.
+  const notice = useSearchParams().get("notice");
 
   const [step, setStep] = useState<"form" | "verify">("form");
   const [email, setEmail] = useState("");
@@ -129,6 +133,9 @@ export function SignInForm() {
       intro="Your notes are where you left them."
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+        {notice === "account-ready" && (
+          <FormNotice message="Your account is ready and your email is verified — log in below to get started." />
+        )}
         <Field label="Email">
           <TextInput
             type="email"

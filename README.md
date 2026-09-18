@@ -40,8 +40,36 @@ Shortcut: `npx clerk@latest init` creates a development instance and writes
 the keys to `.env.local` for you; run `npx clerk auth login` later to claim
 it into your Clerk account.
 
-When deploying, set the same two variables in the host's environment
-(they're needed at build time).
+When deploying, set the same variables in the host's environment (they're
+needed at build time):
+
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` — the app
+  refuses to render auth pages without both (`src/services/clerkConfig.ts`).
+- `NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in` and
+  `NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up` — so Clerk's own redirects land
+  on this app's custom pages instead of Clerk-hosted ones.
+
+### Clerk domains on Vercel
+
+Which keys work depends on the domain the deployment runs on:
+
+- A `*.vercel.app` domain (previews, or a project without a custom domain)
+  only works with **development** keys (`pk_test_` / `sk_test_`).
+  Development instances accept any origin, so nothing needs to be added in
+  the Clerk Dashboard. Development instances cap sign-ups and show a Clerk
+  banner, so they're not for real traffic.
+- **Production** keys (`pk_live_` / `sk_live_`) require a domain you own,
+  added under **Configure → Domains** in the Clerk Dashboard with the DNS
+  records it lists. Clerk cannot serve a production instance from
+  `*.vercel.app` (you can't add DNS records there), so a custom domain is a
+  hard requirement for going live.
+- On Vercel, scope the variables per environment: production keys on the
+  Production environment (custom domain), development keys on Preview.
+
+A key/domain mismatch (production keys on a `*.vercel.app` URL) makes
+Clerk's frontend API reject or misroute requests, which surfaces as broken
+sign-in/sign-up on an app that builds and renders fine. If sign-up fails
+only on the deployed site, check this first.
 
 ## What exists today
 

@@ -102,3 +102,13 @@ export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return <p className="text-sm leading-relaxed text-coral">{message}</p>;
 }
+
+/** Calm informational banner (good news, not a problem). */
+export function FormNotice({ message }: { message: string | null }) {
+  if (!message) return null;
+  return (
+    <p className="rounded-2xl border border-edge bg-maroon/60 px-5 py-3.5 text-sm leading-relaxed text-pink-pale">
+      {message}
+    </p>
+  );
+}
