@@ -10,7 +10,7 @@ Requires Node 20+.
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in the Clerk keys (next section)
+cp .env.example .env.local   # then fill in the Clerk + OpenAI keys (next sections)
 npm run dev
 ```
 
@@ -71,6 +71,35 @@ Clerk's frontend API reject or misroute requests, which surfaces as broken
 sign-in/sign-up on an app that builds and renders fine. If sign-up fails
 only on the deployed site, check this first.
 
+## Set up OpenAI (extraction)
+
+Saving a note (or tapping **Extract** on one) sends it to `/api/extract`,
+which uses OpenAI to correct the French and pull out vocabulary, verbs and
+grammar. This needs one key:
+
+1. Create an API key at
+   [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+   (starts with `sk-`).
+2. Locally: add `OPENAI_API_KEY=sk-...` to `.env.local` and restart
+   `npm run dev`.
+3. On Vercel: open the project → **Settings → Environment Variables**, add
+   `OPENAI_API_KEY` with the key as its value (Production and Preview), and
+   **redeploy** — environment changes only apply to new deployments.
+
+The key stays server-side (`src/app/api/extract/route.ts`); it is never
+sent to the browser. Optional: set `OPENAI_MODEL` to override the default
+(`gpt-4o-mini`).
+
+To retest after adding the key: sign in, dump a sample note such as
+
+> Je suis allé au boulangerie hier. J'ai acheté deux baguette.
+
+and save it. You should see a corrected version (au → à la, baguette →
+baguettes) with a short English why for each fix, and new entries under
+Vocabulary, Verbs and Grammar in the dock. Without the key, the same flow
+shows a message telling you to add `OPENAI_API_KEY` — the note stays saved,
+so you can extract it later from the notes library.
+
 ## What exists today
 
 - **Auth**: signed-out visitors land on a welcome screen with Create
@@ -85,23 +114,33 @@ only on the deployed site, check this first.
 - **Notes** (default view): dump notes and browse the library by date.
   Notes save to the browser (localStorage), keyed per account; swapping in
   a real database later means changing `src/services/notes.ts` only.
-- **Vocabulary / Verbs**: living-index screens with search (vocabulary) and
-  per-pronoun conjugation layout (verbs). Empty until extraction ships.
-- **Grammar / Quiz**: placeholder "coming next" screens.
+- **Extraction**: saving a note (or tapping **Extract** on an existing one)
+  corrects the French — each fix with a short English why — and files the
+  words, verbs and grammar rules into the libraries. Repeats reinforce
+  existing entries instead of duplicating them; nothing already learned is
+  ever wiped. Verbs are conjugated at the level/stage from onboarding
+  (A1 stage 1 present / 2 passé composé / 3 future; A2+ get present).
+  Extracts store in the browser next to the notes (localStorage, keyed per
+  account), so a database swap later touches only `src/services/`.
+- **Vocabulary / Verbs / Grammar**: living numbered indexes fed by
+  extraction, with search (vocabulary) and per-pronoun conjugations at the
+  user's stage (verbs).
+- **Quiz**: placeholder "coming next" screen.
 
-Not built yet: extraction, spaced repetition, quiz sessions, Resend email.
+Not built yet: spaced repetition, quiz sessions, Resend email.
 
 ## Code layout
 
 - `src/app/` — Next.js pages: the app (`page.tsx`), auth (`welcome`,
   `sign-in`, `sign-up`), `onboarding`, `terms`, `privacy`. Design tokens
-  live in `globals.css`.
+  live in `globals.css`. `api/extract` is the server route that calls
+  OpenAI (signed-in users only; the key never reaches the browser).
 - `src/middleware.ts` — Clerk route protection: signed-out users only see
   the auth pages.
-- `src/components/` — shell UI (dock, notes, vocabulary, verbs,
+- `src/components/` — shell UI (dock, notes, vocabulary, verbs, grammar,
   placeholders, settings, auth forms, hand-drawn icons).
-- `src/services/` — the "how": note storage, onboarding profile,
-  vocabulary/verb data shapes, Clerk helpers.
+- `src/services/` — the "how": note storage, extraction orchestration,
+  onboarding profile, vocabulary/verb/grammar libraries, Clerk helpers.
 
 ## Checks
 

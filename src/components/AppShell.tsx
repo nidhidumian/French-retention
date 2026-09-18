@@ -3,17 +3,18 @@
 import { useState } from "react";
 import { Settings } from "lucide-react";
 import { Dock } from "./Dock";
+import { GrammarView } from "./GrammarView";
 import { NotesView } from "./NotesView";
 import { PlaceholderView } from "./PlaceholderView";
 import { SettingsPanel } from "./SettingsPanel";
 import { VerbsView } from "./VerbsView";
 import { VocabularyView } from "./VocabularyView";
-import { TicketCheckIcon, TimerIcon } from "./icons";
+import { TimerIcon } from "./icons";
 import type { Section } from "./sections";
 import type { FrenchProfile } from "@/services/onboarding";
 
 const PLACEHOLDERS: Record<
-  "grammar" | "quiz",
+  "quiz",
   {
     kicker: string;
     title: string;
@@ -22,20 +23,6 @@ const PLACEHOLDERS: Record<
     icon: React.ReactNode;
   }
 > = {
-  grammar: {
-    kicker: "Chapter 04 · Rules",
-    title: "Grammar",
-    description:
-      "The rules hiding in your notes, each with a short why — explained like a margin note, not a lecture.",
-    contents: [
-      "Rules surfaced from your own French",
-      "A short, human why for each one",
-      "Examples pulled from your notes",
-    ],
-    icon: (
-      <TicketCheckIcon strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />
-    ),
-  },
   quiz: {
     kicker: "Chapter 05 · Recall",
     title: "Quiz",
@@ -110,9 +97,10 @@ export function AppShell({
         {section === "verbs" && (
           <VerbsView userId={userId} profile={profile} onDumpNote={goDumpNote} />
         )}
-        {(section === "grammar" || section === "quiz") && (
-          <PlaceholderView {...PLACEHOLDERS[section]} />
+        {section === "grammar" && (
+          <GrammarView userId={userId} onDumpNote={goDumpNote} />
         )}
+        {section === "quiz" && <PlaceholderView {...PLACEHOLDERS.quiz} />}
       </main>
 
       <Dock active={section} onSelect={selectSection} />
