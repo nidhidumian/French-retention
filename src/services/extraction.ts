@@ -13,7 +13,7 @@ import { mergeGrammar } from "./grammar";
  * Extraction service — turns one dumped note into corrections plus new
  * vocabulary, verb and grammar entries.
  *
- * The LLM call lives server-side in /api/extract (the OpenAI key never
+ * The LLM call lives server-side in /api/extract (the Gemini key never
  * reaches the browser). This module owns the client half: call the API,
  * merge the results into the per-user libraries, and stamp the note with
  * its correction receipt.

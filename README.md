@@ -10,7 +10,7 @@ Requires Node 20+.
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in the Clerk + OpenAI keys (next sections)
+cp .env.example .env.local   # then fill in the Clerk + Gemini keys (next sections)
 npm run dev
 ```
 
@@ -71,24 +71,28 @@ Clerk's frontend API reject or misroute requests, which surfaces as broken
 sign-in/sign-up on an app that builds and renders fine. If sign-up fails
 only on the deployed site, check this first.
 
-## Set up OpenAI (extraction)
+## Set up Google Gemini (extraction)
 
 Saving a note (or tapping **Extract** on one) sends it to `/api/extract`,
-which uses OpenAI to correct the French and pull out vocabulary, verbs and
-grammar. This needs one key:
+which uses Google Gemini to correct the French and pull out vocabulary,
+verbs and grammar. This needs one key, and Google AI Studio gives one away
+free:
 
-1. Create an API key at
-   [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-   (starts with `sk-`).
-2. Locally: add `OPENAI_API_KEY=sk-...` to `.env.local` and restart
+1. Go to [aistudio.google.com](https://aistudio.google.com), sign in with a
+   Google account, and click **Get API key** → **Create API key**. Copy the
+   key (starts with `AIza`). The free tier is plenty for personal use — no
+   card needed.
+2. Locally: add `GEMINI_API_KEY=AIza...` to `.env.local` and restart
    `npm run dev`.
 3. On Vercel: open the project → **Settings → Environment Variables**, add
-   `OPENAI_API_KEY` with the key as its value (Production and Preview), and
+   `GEMINI_API_KEY` with the key as its value (Production and Preview), and
    **redeploy** — environment changes only apply to new deployments.
 
 The key stays server-side (`src/app/api/extract/route.ts`); it is never
-sent to the browser. Optional: set `OPENAI_MODEL` to override the default
-(`gpt-4o-mini`).
+sent to the browser. If you already have the key under the name
+`GOOGLE_GENERATIVE_AI_API_KEY` (the Vercel AI SDK's spelling), that works
+too. Optional: set `GEMINI_MODEL` to override the default
+(`gemini-3.5-flash`).
 
 To retest after adding the key: sign in, dump a sample note such as
 
@@ -97,7 +101,7 @@ To retest after adding the key: sign in, dump a sample note such as
 and save it. You should see a corrected version (au → à la, baguette →
 baguettes) with a short English why for each fix, and new entries under
 Vocabulary, Verbs and Grammar in the dock. Without the key, the same flow
-shows a message telling you to add `OPENAI_API_KEY` — the note stays saved,
+shows a message telling you to add `GEMINI_API_KEY` — the note stays saved,
 so you can extract it later from the notes library.
 
 ## What exists today
@@ -134,7 +138,7 @@ Not built yet: spaced repetition, quiz sessions, Resend email.
 - `src/app/` — Next.js pages: the app (`page.tsx`), auth (`welcome`,
   `sign-in`, `sign-up`), `onboarding`, `terms`, `privacy`. Design tokens
   live in `globals.css`. `api/extract` is the server route that calls
-  OpenAI (signed-in users only; the key never reaches the browser).
+  Google Gemini (signed-in users only; the key never reaches the browser).
 - `src/middleware.ts` — Clerk route protection: signed-out users only see
   the auth pages.
 - `src/components/` — shell UI (dock, notes, vocabulary, verbs, grammar,

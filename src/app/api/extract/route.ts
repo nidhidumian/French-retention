@@ -11,7 +11,7 @@ import type { ExtractApiResponse } from "@/services/extraction";
 
 /**
  * POST /api/extract — correct one French note and extract vocabulary,
- * verbs and grammar from it. Server-side only: the OpenAI key never
+ * verbs and grammar from it. Server-side only: the Gemini key never
  * reaches the browser, and only a signed-in Clerk user can call this.
  *
  * The user's CEFR level and A1 conjugation stage come from Clerk
@@ -45,13 +45,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  // GOOGLE_GENERATIVE_AI_API_KEY is the Vercel AI SDK's spelling; accept
+  // both so a key added under either name works.
+  const apiKey =
+    process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       {
         code: "missing-key",
         error:
-          "Extraction needs an OpenAI key. Add OPENAI_API_KEY in Vercel (Project → Settings → Environment Variables) or .env.local, then redeploy or restart.",
+          "Extraction needs a Google Gemini key. Add GEMINI_API_KEY in Vercel (Project → Settings → Environment Variables) or .env.local, then redeploy or restart. Free keys: aistudio.google.com.",
       },
       { status: 503 }
     );
@@ -83,9 +86,9 @@ export async function POST(req: Request) {
 
   let raw: unknown;
   try {
-    raw = await callOpenAi(apiKey, text, level, stage);
+    raw = await callGemini(apiKey, text, level, stage);
   } catch (error) {
-    console.error("[extract] OpenAI call failed:", error);
+    console.error("[extract] Gemini call failed:", error);
     return NextResponse.json(
       { error: "The extraction service had a hiccup. Please try again." },
       { status: 502 }
@@ -104,43 +107,47 @@ export async function POST(req: Request) {
   return NextResponse.json(result);
 }
 
-async function callOpenAi(
+async function callGemini(
   apiKey: string,
   noteText: string,
   level: CefrLevel,
   stage: ConjugationStage
 ): Promise<unknown> {
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: systemPrompt(level, stage) },
-        { role: "user", content: noteText },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: "note_extraction", strict: true, schema: SCHEMA },
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
       },
-    }),
-  });
+      body: JSON.stringify({
+        systemInstruction: {
+          parts: [{ text: systemPrompt(level, stage) }],
+        },
+        contents: [{ parts: [{ text: noteText }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseJsonSchema: SCHEMA,
+        },
+      }),
+    }
+  );
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(`OpenAI ${response.status}: ${detail.slice(0, 500)}`);
+    throw new Error(`Gemini ${response.status}: ${detail.slice(0, 500)}`);
   }
   const payload = await response.json();
-  const message = payload?.choices?.[0]?.message;
-  if (message?.refusal) throw new Error(`Model refused: ${message.refusal}`);
-  if (typeof message?.content !== "string") {
-    throw new Error("No content in OpenAI response");
+  if (payload?.promptFeedback?.blockReason) {
+    throw new Error(`Model blocked: ${payload.promptFeedback.blockReason}`);
   }
-  return JSON.parse(message.content);
+  const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (typeof text !== "string") {
+    throw new Error("No content in Gemini response");
+  }
+  return JSON.parse(text);
 }
 
 function systemPrompt(level: CefrLevel, stage: ConjugationStage): string {
@@ -167,10 +174,11 @@ Extract only what the note actually contains. If the note has no French at all, 
 }
 
 /**
- * Structured-output schema (strict mode: every property required,
- * additionalProperties false). Enums and array lengths are re-checked in
- * normalizeModelOutput rather than encoded here, since strict mode's
- * schema support is narrow.
+ * Structured-output JSON Schema for Gemini's responseJsonSchema (every
+ * property required, additionalProperties false, null allowed via type
+ * arrays). Enums and array lengths are re-checked in normalizeModelOutput
+ * rather than encoded here, since the models support only a schema subset
+ * and silently ignore what they don't.
  */
 const SCHEMA = {
   type: "object",
