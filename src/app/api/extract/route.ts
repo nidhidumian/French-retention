@@ -88,9 +88,17 @@ export async function POST(req: Request) {
   try {
     raw = await callGemini(apiKey, text, level, stage);
   } catch (error) {
+    // Log the full (secret-free) upstream error so Vercel Function logs show
+    // exactly what Gemini said, and pass a short sanitized detail to the UI
+    // so a hiccup is diagnosable without leaking the key or the note.
     console.error("[extract] Gemini call failed:", error);
+    const detail =
+      error instanceof UpstreamError ? error.safeDetail : null;
     return NextResponse.json(
-      { error: "The extraction service had a hiccup. Please try again." },
+      {
+        error: "The extraction service had a hiccup. Please try again.",
+        detail,
+      },
       { status: 502 }
     );
   }
@@ -107,13 +115,35 @@ export async function POST(req: Request) {
   return NextResponse.json(result);
 }
 
+/** Redact anything that looks like a Google API key ("AIza…") so upstream
+ * error text is safe to log and to show to the user. */
+function redactSecrets(text: string): string {
+  return text.replace(/AIza[0-9A-Za-z_-]{10,}/g, "AIza[redacted]");
+}
+
+/** A Gemini-side failure carrying a short, secret-free summary that the
+ * route may safely include in its JSON error response. */
+class UpstreamError extends Error {
+  readonly safeDetail: string;
+
+  constructor(message: string, safeDetail: string) {
+    super(redactSecrets(message));
+    this.name = "UpstreamError";
+    this.safeDetail = redactSecrets(safeDetail);
+  }
+}
+
+// Default must be a current stable model that supports generateContent with
+// responseJsonSchema structured output; override with GEMINI_MODEL.
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
 async function callGemini(
   apiKey: string,
   noteText: string,
   level: CefrLevel,
   stage: ConjugationStage
 ): Promise<unknown> {
-  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -136,18 +166,51 @@ async function callGemini(
   );
 
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`Gemini ${response.status}: ${detail.slice(0, 500)}`);
+    const body = await response.text().catch(() => "");
+    // Error bodies look like { error: { code, message, status } }; pull the
+    // message out for a readable one-liner, keeping the raw body for logs.
+    let upstreamMessage = "";
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed?.error?.message === "string") {
+        upstreamMessage = parsed.error.message;
+      }
+    } catch {
+      // Non-JSON body; the raw text goes to the logs below.
+    }
+    throw new UpstreamError(
+      `Gemini ${response.status} for model "${model}": ${body.slice(0, 1000)}`,
+      `Gemini returned ${response.status}${
+        upstreamMessage ? `: ${upstreamMessage.slice(0, 300)}` : ""
+      }` +
+        (response.status === 404
+          ? ` (model "${model}" — check GEMINI_MODEL)`
+          : "")
+    );
   }
   const payload = await response.json();
   if (payload?.promptFeedback?.blockReason) {
-    throw new Error(`Model blocked: ${payload.promptFeedback.blockReason}`);
+    const reason = String(payload.promptFeedback.blockReason);
+    throw new UpstreamError(
+      `Model blocked the prompt: ${reason}`,
+      `The model blocked this note (${reason}).`
+    );
   }
   const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (typeof text !== "string") {
-    throw new Error("No content in Gemini response");
+    throw new UpstreamError(
+      `No content in Gemini response: ${JSON.stringify(payload).slice(0, 1000)}`,
+      "The model returned an empty response."
+    );
   }
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new UpstreamError(
+      `Gemini returned non-JSON text: ${text.slice(0, 1000)}`,
+      "The model returned malformed JSON."
+    );
+  }
 }
 
 function systemPrompt(level: CefrLevel, stage: ConjugationStage): string {

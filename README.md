@@ -73,10 +73,11 @@ only on the deployed site, check this first.
 
 ## Set up Google Gemini (extraction)
 
-Saving a note (or tapping **Extract** on one) sends it to `/api/extract`,
-which uses Google Gemini to correct the French and pull out vocabulary,
-verbs and grammar. This needs one key, and Google AI Studio gives one away
-free:
+Saving a note automatically sends it to `/api/extract`, which uses Google
+Gemini to correct the French and pull out vocabulary, verbs and grammar —
+there is no Extract button; if a run fails, the note keeps a **Try again**
+action in the library. This needs one key, and Google AI Studio gives one
+away free:
 
 1. Go to [aistudio.google.com](https://aistudio.google.com), sign in with a
    Google account, and click **Get API key** → **Create API key**. Copy the
@@ -92,17 +93,28 @@ The key stays server-side (`src/app/api/extract/route.ts`); it is never
 sent to the browser. If you already have the key under the name
 `GOOGLE_GENERATIVE_AI_API_KEY` (the Vercel AI SDK's spelling), that works
 too. Optional: set `GEMINI_MODEL` to override the default
-(`gemini-3.5-flash`).
+(`gemini-2.5-flash`) — pick a model that supports `generateContent` with
+JSON-schema structured output.
+
+**If extraction fails on Vercel:** environment-variable changes (adding
+`GEMINI_API_KEY`, changing `GEMINI_MODEL`) only take effect after a
+**Redeploy** — trigger one from the Deployments tab. If it still fails
+after redeploying, open the project's **Logs** (or Observability →
+Functions) and filter for `/api/extract`: the route logs the real upstream
+Gemini error (`[extract] Gemini call failed: …`), e.g. an invalid model
+name or an API key restriction, and the same sanitized detail is shown in
+the app under the "hiccup" message.
 
 To retest after adding the key: sign in, dump a sample note such as
 
 > Je suis allé au boulangerie hier. J'ai acheté deux baguette.
 
-and save it. You should see a corrected version (au → à la, baguette →
-baguettes) with a short English why for each fix, and new entries under
-Vocabulary, Verbs and Grammar in the dock. Without the key, the same flow
-shows a message telling you to add `GEMINI_API_KEY` — the note stays saved,
-so you can extract it later from the notes library.
+and save it. Extraction starts on its own: you should see a corrected
+version (au → à la, baguette → baguettes) with a short English why for each
+fix, and new entries under Vocabulary, Verbs and Grammar in the dock.
+Without the key, the same flow shows a message telling you to add
+`GEMINI_API_KEY` — the note stays saved, so you can retry it later from the
+notes library.
 
 ## What exists today
 
