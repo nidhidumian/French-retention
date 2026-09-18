@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { listVerbs, PRONOUNS, type VerbEntry } from "@/services/verbs";
 import type { FrenchProfile } from "@/services/onboarding";
-import { Kicker } from "./editorial";
+import { PrimaryPill, ScreenHeader } from "./editorial";
 import { ScrollIcon } from "./icons";
 
 /**
@@ -16,9 +16,11 @@ import { ScrollIcon } from "./icons";
 export function VerbsView({
   userId,
   profile,
+  onDumpNote,
 }: {
   userId: string;
   profile: FrenchProfile;
+  onDumpNote: () => void;
 }) {
   const [entries, setEntries] = useState<VerbEntry[]>([]);
 
@@ -30,33 +32,26 @@ export function VerbsView({
 
   return (
     <section className="mx-auto w-full max-w-2xl">
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <Kicker>All verbs from notes</Kicker>
-          <h1 className="mt-2 text-5xl font-bold uppercase leading-[1.05] tracking-tight text-pink sm:text-6xl">
-            Verbs
-          </h1>
-        </div>
-        <div className="mt-1 flex h-16 w-16 shrink-0 items-center justify-center rounded-card border border-edge bg-surface text-pink sm:h-20 sm:w-20">
-          <ScrollIcon strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />
-        </div>
-      </div>
-      <p className="mt-5 max-w-lg text-lg leading-relaxed text-cream sm:text-xl">
-        Every verb from your notes with meaning and conjugation for each
-        pronoun at your level.
-      </p>
-
-      <hr className="hairline mt-9 border-t" />
+      <ScreenHeader
+        kicker="All verbs from notes"
+        title="Verbs"
+        uppercaseTitle
+        standfirst="Every verb from your notes with meaning and conjugation for each pronoun at your level."
+        icon={<ScrollIcon strokeWidth={1.5} className="h-8 w-8" />}
+      />
 
       {entries.length === 0 ? (
-        <div className="mt-9 rounded-card border border-edge bg-surface p-6 sm:p-7">
-          <p className="text-lg italic leading-relaxed text-quote">
+        <div className="mt-10 rounded-card border border-edge bg-surface p-7 sm:p-8">
+          <p className="text-lg leading-relaxed text-cream/90">
             No verbs yet. They&apos;ll be pulled from your notes, conjugated
             for your level.
           </p>
+          <PrimaryPill onClick={onDumpNote} className="mt-6">
+            Dump a note
+          </PrimaryPill>
         </div>
       ) : (
-        <ol className="mt-2">
+        <ol className="mt-4">
           {entries.map((entry, i) => (
             <VerbRow key={entry.id} entry={entry} index={i} stage={stage} />
           ))}
@@ -82,7 +77,7 @@ function VerbRow({
 }) {
   const forms = entry.conjugations[stage] ?? entry.conjugations[1] ?? [];
   return (
-    <li className="hairline flex gap-4 border-b py-6 sm:gap-5">
+    <li className="hairline flex gap-4 border-b py-7 sm:gap-5">
       <span className="mono-label pt-1 text-[0.72rem] text-pink-hot">
         {String(index + 1).padStart(2, "0")}
       </span>
@@ -91,11 +86,11 @@ function VerbRow({
           {entry.infinitive}
           <span className="font-normal text-cream"> — {entry.meaning}</span>
         </p>
-        <ul className="mt-3">
+        <ul className="mt-4">
           {PRONOUNS.map((pronoun, i) => (
             <li
               key={pronoun}
-              className="flex items-baseline gap-4 border-b border-pink-hot/25 py-2 last:border-b-0"
+              className="flex items-baseline gap-4 border-b border-pink-hot/25 py-2.5 last:border-b-0"
             >
               <span className="mono-label w-24 shrink-0 text-[0.68rem] text-pink-hot">
                 {pronoun}

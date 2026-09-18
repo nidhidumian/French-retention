@@ -26,20 +26,20 @@ export function AuthShell({
     >
       <Link
         href="/welcome"
-        className="mono-label mb-10 inline-block w-fit text-[0.7rem] text-cream-dim transition-colors hover:text-pink"
+        className="mono-label mb-12 inline-block w-fit text-[0.7rem] text-cream-dim transition-colors hover:text-pink"
       >
         French retention
       </Link>
       <Kicker>{kicker}</Kicker>
-      <h1 className="mt-2 text-4xl font-bold leading-[1.05] tracking-tight text-pink sm:text-5xl">
+      <h1 className="mt-3 text-4xl font-bold leading-[1.05] tracking-tight text-pink sm:text-5xl">
         {title}
       </h1>
       {intro && (
-        <p className="mt-4 max-w-lg text-lg leading-relaxed text-cream">
+        <p className="mt-5 max-w-md text-lg leading-relaxed text-cream/90">
           {intro}
         </p>
       )}
-      <div className="mt-8">{children}</div>
+      <div className="mt-10">{children}</div>
     </main>
   );
 }

@@ -2,8 +2,8 @@
 
 /**
  * Small editorial form controls shared by the auth and onboarding screens:
- * mono uppercase labels, maroon inputs with hairline borders, pink pill
- * submit buttons — same voice as the rest of the app.
+ * mono uppercase labels, maroon inputs with hairline borders, one filled
+ * pink primary button per screen — same voice as the rest of the app.
  */
 
 export function Field({
@@ -28,7 +28,7 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...rest}
-      className={`mt-2 w-full rounded-[0.8rem] border border-edge bg-maroon/60 px-4 py-3 text-[1.02rem] text-cream placeholder:text-cream-dim/40 focus:border-pink-hot/60 focus:outline-none ${className}`}
+      className={`mt-2.5 w-full rounded-2xl border border-edge bg-maroon/60 px-5 py-3.5 text-[1.02rem] text-cream placeholder:text-cream-dim/40 focus:border-pink-hot/70 focus:outline-none ${className}`}
     />
   );
 }
@@ -43,14 +43,14 @@ export function CheckboxRow({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-3">
+    <label className="flex cursor-pointer items-start gap-3.5">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 shrink-0 cursor-pointer appearance-none rounded-[0.3rem] border border-edge bg-maroon/60 transition-colors checked:border-pink-hot checked:bg-pink-hot"
+        className="mt-1 h-[1.15rem] w-[1.15rem] shrink-0 cursor-pointer appearance-none rounded-[0.35rem] border border-edge bg-maroon/60 transition-colors checked:border-pink-hot checked:bg-pink-hot"
       />
-      <span className="text-[0.95rem] leading-relaxed text-cream">
+      <span className="text-[0.98rem] leading-relaxed text-cream">
         {children}
       </span>
     </label>
@@ -73,7 +73,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="mono-label rounded-full bg-pink-pale px-7 py-3 text-[0.78rem] text-surface transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+      className="mono-label w-full rounded-full bg-pink-pale px-8 py-4 text-[0.8rem] text-surface transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
     >
       {children}
     </button>

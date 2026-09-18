@@ -63,6 +63,19 @@ export function AppShell({
 }) {
   const [section, setSection] = useState<Section>("notes");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // When an empty state's "Dump a note" is tapped, land on Notes with the
+  // editor already open. Cleared on any normal dock navigation.
+  const [pendingDump, setPendingDump] = useState(false);
+
+  function selectSection(next: Section) {
+    setPendingDump(false);
+    setSection(next);
+  }
+
+  function goDumpNote() {
+    setPendingDump(true);
+    setSection("notes");
+  }
 
   return (
     <div className="min-h-dvh">
@@ -83,18 +96,26 @@ export function AppShell({
         </button>
       </header>
 
-      <main className="mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-5 pb-40 pt-16 sm:px-8 sm:pt-24">
-        {section === "notes" && <NotesView userId={userId} />}
-        {section === "vocabulary" && <VocabularyView userId={userId} />}
+      <main className="mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-5 pb-44 pt-20 sm:px-8 sm:pt-24">
+        {section === "notes" && (
+          <NotesView
+            key={pendingDump ? "dump" : "browse"}
+            userId={userId}
+            initialScreen={pendingDump ? "add" : "home"}
+          />
+        )}
+        {section === "vocabulary" && (
+          <VocabularyView userId={userId} onDumpNote={goDumpNote} />
+        )}
         {section === "verbs" && (
-          <VerbsView userId={userId} profile={profile} />
+          <VerbsView userId={userId} profile={profile} onDumpNote={goDumpNote} />
         )}
         {(section === "grammar" || section === "quiz") && (
           <PlaceholderView {...PLACEHOLDERS[section]} />
         )}
       </main>
 
-      <Dock active={section} onSelect={setSection} />
+      <Dock active={section} onSelect={selectSection} />
 
       {settingsOpen && (
         <SettingsPanel

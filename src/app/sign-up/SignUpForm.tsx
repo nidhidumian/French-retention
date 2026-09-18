@@ -227,7 +227,7 @@ export function SignUpForm() {
           </Link>
         </div>
 
-        <p className="mono-label pt-1 text-[0.62rem] text-cream-dim/70">
+        <p className="mono-label pt-1 text-[0.68rem] text-cream-dim">
           You stay logged in on this device until you log out.
         </p>
       </form>

@@ -41,8 +41,9 @@ When deploying, set the same two variables in the host's environment
 - **Auth**: signed-out visitors land on a welcome screen with Create
   account / Log in. Sign-up asks for email, name, password (twice) and
   acceptance of the placeholder `/terms` and `/privacy` pages, then
-  verifies the email with a code. Sessions persist on the device until log
-  out (Settings gear → Log out).
+  verifies the email with a code. Logging in on a new device asks for an
+  email code once (Clerk Device Trust). Sessions persist on the device
+  until log out (Settings gear → Log out).
 - **Onboarding**: first sign-in asks for a CEFR level (A1–C1) and, at A1, a
   conjugation stage (1 present / 2 passé composé / 3 future). Stored on the
   Clerk user's `publicMetadata`, so it follows the account across devices.
@@ -72,3 +73,14 @@ Not built yet: extraction, spaced repetition, quiz sessions, Resend email.
 ```bash
 npm run build
 ```
+
+## Screenshots
+
+With the dev server running and Clerk keys in `.env.local`:
+
+```bash
+node scripts/capture-screens.mjs
+```
+
+captures desktop and 430px screenshots of every screen into
+`/tmp/polish-shots` (uses Playwright, a dev dependency).

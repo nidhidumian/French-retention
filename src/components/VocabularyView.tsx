@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MoveRight } from "lucide-react";
 import { listVocabulary, type VocabEntry } from "@/services/vocabulary";
-import { Kicker } from "./editorial";
+import { PrimaryPill, ScreenHeader } from "./editorial";
 import { BookMagnifierIcon } from "./icons";
 
 const SEARCH_PLACEHOLDER = "Search any word";
@@ -13,7 +13,13 @@ const SEARCH_PLACEHOLDER = "Search any word";
  * extractor hasn't shipped, so the list renders its empty state; the entry
  * layout below is the pattern real words will use.
  */
-export function VocabularyView({ userId }: { userId: string }) {
+export function VocabularyView({
+  userId,
+  onDumpNote,
+}: {
+  userId: string;
+  onDumpNote: () => void;
+}) {
   const [entries, setEntries] = useState<VocabEntry[]>([]);
   const [query, setQuery] = useState("");
   const [placeholder, setPlaceholder] = useState(SEARCH_PLACEHOLDER);
@@ -34,24 +40,14 @@ export function VocabularyView({ userId }: { userId: string }) {
 
   return (
     <section className="mx-auto w-full max-w-2xl">
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <Kicker>Words from notes</Kicker>
-          <h1 className="mt-2 text-5xl font-bold leading-[1.05] tracking-tight text-pink sm:text-6xl">
-            Vocabulary
-          </h1>
-        </div>
-        <div className="mt-1 flex h-16 w-16 shrink-0 items-center justify-center rounded-card border border-edge bg-surface text-pink sm:h-20 sm:w-20">
-          <BookMagnifierIcon
-            strokeWidth={1.5}
-            className="h-8 w-8 sm:h-9 sm:w-9"
-          />
-        </div>
-      </div>
-      <p className="mt-5 max-w-lg text-lg leading-relaxed text-cream sm:text-xl">
-        Every word extracted from your notes and kept the way a book keeps an
-        index — gender, plural, the lot.
-      </p>
+      <ScreenHeader
+        kicker="Words from notes"
+        title="Vocabulary"
+        standfirst="Every word extracted from your notes and kept the way a book keeps an index — gender, plural, the lot."
+        icon={
+          <BookMagnifierIcon strokeWidth={1.5} className="h-8 w-8" />
+        }
+      />
 
       <input
         type="search"
@@ -61,21 +57,24 @@ export function VocabularyView({ userId }: { userId: string }) {
         onBlur={() => setPlaceholder(SEARCH_PLACEHOLDER)}
         placeholder={placeholder}
         aria-label="Search any word"
-        className="mono-label mt-7 w-full rounded-[0.8rem] border border-edge bg-surface px-4 py-3 text-[0.78rem] text-cream placeholder:text-cream-dim/50 focus:border-pink-hot/60 focus:outline-none"
+        className="mono-label mt-9 w-full rounded-2xl border border-edge bg-surface px-5 py-3.5 text-[0.78rem] text-cream placeholder:text-cream-dim/50 focus:border-pink-hot/60 focus:outline-none"
       />
 
-      <hr className="hairline mt-9 border-t" />
-
       {visible.length === 0 ? (
-        <div className="mt-9 rounded-card border border-edge bg-surface p-6 sm:p-7">
-          <p className="text-lg italic leading-relaxed text-quote">
+        <div className="mt-9 rounded-card border border-edge bg-surface p-7 sm:p-8">
+          <p className="text-lg leading-relaxed text-cream/90">
             {query.trim()
               ? "Nothing in the index matches that — yet."
               : "No words yet. Dump a note and the index starts building itself."}
           </p>
+          {!query.trim() && (
+            <PrimaryPill onClick={onDumpNote} className="mt-6">
+              Dump a note
+            </PrimaryPill>
+          )}
         </div>
       ) : (
-        <ol className="mt-2">
+        <ol className="mt-4">
           {visible.map((entry, i) => (
             <VocabRow key={entry.id} entry={entry} index={i} />
           ))}
@@ -91,7 +90,7 @@ export function VocabularyView({ userId }: { userId: string }) {
  */
 function VocabRow({ entry, index }: { entry: VocabEntry; index: number }) {
   return (
-    <li className="hairline flex gap-4 border-b py-5 sm:gap-5">
+    <li className="hairline flex gap-4 border-b py-6 sm:gap-5">
       <span className="mono-label pt-1 text-[0.72rem] text-pink-hot">
         {String(index + 1).padStart(2, "0")}
       </span>
@@ -103,18 +102,18 @@ function VocabRow({ entry, index }: { entry: VocabEntry; index: number }) {
           )}
           <span className="font-normal text-cream"> — {entry.meaning}</span>
         </p>
-        <p className="mono-label mt-1 text-[0.68rem] text-cream-dim">
+        <p className="mono-label mt-1.5 text-[0.68rem] text-cream-dim">
           {entry.phonetic}
         </p>
         {entry.examples.map((example) => (
           <p
             key={example}
-            className="mt-2 text-[0.98rem] italic leading-relaxed text-quote"
+            className="mt-2.5 text-[0.98rem] italic leading-relaxed text-quote"
           >
             {example}
           </p>
         ))}
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5">
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
           <FormPair label="sing" from={entry.forms.singular} to={entry.forms.plural} toLabel="plur" />
           <FormPair label="m" from={entry.forms.masculine} to={entry.forms.feminine} toLabel="f" />
         </div>

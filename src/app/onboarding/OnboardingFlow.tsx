@@ -51,7 +51,7 @@ export function OnboardingFlow({ firstName }: { firstName: string | null }) {
       wide
     >
       <p className="mono-label text-[0.7rem] text-pink-hot">Your CEFR level</p>
-      <div className="mt-3 space-y-3">
+      <div className="mt-4 space-y-3">
         {CEFR_LEVELS.map((option) => (
           <PickCard
             key={option.id}
@@ -69,14 +69,14 @@ export function OnboardingFlow({ firstName }: { firstName: string | null }) {
 
       {needsStage && (
         <>
-          <p className="mono-label mt-9 text-[0.7rem] text-pink-hot">
+          <p className="mono-label mt-12 text-[0.7rem] text-pink-hot">
             Your conjugation stage
           </p>
-          <p className="mt-2 max-w-lg text-[0.98rem] leading-relaxed text-cream-dim">
+          <p className="mt-2.5 max-w-md text-[0.98rem] leading-relaxed text-cream-dim">
             At A1 the app introduces tenses one at a time. Where are your
             conjugations today?
           </p>
-          <div className="mt-3 space-y-3">
+          <div className="mt-4 space-y-3">
             {CONJUGATION_STAGES.map((option) => (
               <PickCard
                 key={option.id}
@@ -91,7 +91,7 @@ export function OnboardingFlow({ firstName }: { firstName: string | null }) {
         </>
       )}
 
-      <div className="mt-9 space-y-4">
+      <div className="mt-12 space-y-4">
         <FormError message={error} />
         <PrimaryButton type="button" onClick={handleSave} disabled={!ready || busy}>
           {busy ? "Saving…" : "Start taking notes"}
@@ -119,9 +119,9 @@ function PickCard({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`flex w-full items-baseline gap-4 rounded-card border px-5 py-4 text-left transition-colors sm:gap-6 sm:px-6 ${
+      className={`flex w-full items-baseline gap-4 rounded-card border px-5 py-4.5 text-left transition-colors sm:gap-6 sm:px-6 sm:py-5 ${
         selected
-          ? "border-pink-hot bg-surface-raised"
+          ? "border-pink-hot bg-surface-raised ring-1 ring-pink-hot/60"
           : "border-edge bg-surface hover:border-pink-hot/60 hover:bg-surface-raised/60"
       }`}
     >

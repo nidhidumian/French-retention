@@ -8,9 +8,9 @@ import {
   listNotes,
   type Note,
 } from "@/services/notes";
-import { BackLink, Kicker } from "./editorial";
+import { BackLink, Kicker, PrimaryPill, ScreenHeader } from "./editorial";
 
-type NotesScreen = "home" | "add" | "library";
+export type NotesScreen = "home" | "add" | "library";
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
@@ -20,8 +20,14 @@ const dateFormat = new Intl.DateTimeFormat("en-GB", {
   minute: "2-digit",
 });
 
-export function NotesView({ userId }: { userId: string }) {
-  const [screen, setScreen] = useState<NotesScreen>("home");
+export function NotesView({
+  userId,
+  initialScreen = "home",
+}: {
+  userId: string;
+  initialScreen?: NotesScreen;
+}) {
+  const [screen, setScreen] = useState<NotesScreen>(initialScreen);
   const [notes, setNotes] = useState<Note[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -53,32 +59,24 @@ export function NotesView({ userId }: { userId: string }) {
     return (
       <section className="mx-auto w-full max-w-2xl">
         <BackLink onClick={() => setScreen("home")} />
-        <Kicker className="mt-6">New entry</Kicker>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight text-pink sm:text-5xl">
+        <Kicker className="mt-8">New entry</Kicker>
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-pink sm:text-5xl">
           Dump a note
         </h1>
-        <blockquote className="mt-6 border-l-[3px] border-coral pl-4 sm:pl-5">
-          <p className="text-lg italic leading-relaxed text-quote sm:text-xl">
-            Whatever today&apos;s French left behind — a phrase, a correction,
-            a word that surprised you.
-          </p>
-        </blockquote>
+        <p className="mt-5 max-w-lg text-lg leading-relaxed text-cream/90">
+          Whatever today&apos;s French left behind — a phrase, a correction, a
+          word that surprised you.
+        </p>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           autoFocus
           placeholder="ex. « Je viens de finir » — just finished. venir de + infinitif…"
-          className="mt-7 h-56 w-full resize-none rounded-card border border-edge bg-surface p-5 text-lg leading-relaxed text-cream placeholder:text-cream-dim/50 focus:border-pink-hot/60 focus:outline-none sm:h-64"
+          className="mt-8 h-56 w-full resize-none rounded-card border border-edge bg-surface p-6 text-lg leading-relaxed text-cream placeholder:text-cream-dim/50 focus:border-pink-hot/60 focus:outline-none sm:h-64"
         />
-        {error && <p className="mt-2 text-sm text-coral">{error}</p>}
-        <div className="mt-5 flex gap-3">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="mono-label rounded-full bg-pink-pale px-6 py-2.5 text-[0.78rem] text-surface transition-opacity hover:opacity-90"
-          >
-            Save note
-          </button>
+        {error && <p className="mt-3 text-sm text-coral">{error}</p>}
+        <div className="mt-6 flex items-center gap-5">
+          <PrimaryPill onClick={handleSave}>Save note</PrimaryPill>
           <button
             type="button"
             onClick={() => {
@@ -86,7 +84,7 @@ export function NotesView({ userId }: { userId: string }) {
               setError(null);
               setScreen("home");
             }}
-            className="mono-label rounded-full border border-edge px-6 py-2.5 text-[0.78rem] text-cream-dim transition-colors hover:border-edge hover:text-cream"
+            className="mono-label text-[0.72rem] text-cream-dim transition-colors hover:text-cream"
           >
             Cancel
           </button>
@@ -99,8 +97,8 @@ export function NotesView({ userId }: { userId: string }) {
     return (
       <section className="mx-auto w-full max-w-2xl">
         <BackLink onClick={() => setScreen("home")} />
-        <Kicker className="mt-6">The shelf</Kicker>
-        <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-2">
+        <Kicker className="mt-8">The shelf</Kicker>
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-2">
           <h1 className="text-4xl font-bold tracking-tight text-pink sm:text-5xl">
             Notes library
           </h1>
@@ -109,18 +107,20 @@ export function NotesView({ userId }: { userId: string }) {
           </span>
         </div>
         {notes.length === 0 ? (
-          <div className="mt-8 rounded-card border border-edge bg-surface p-6 sm:p-7">
-            <p className="text-lg italic leading-relaxed text-quote">
-              Nothing on the shelf yet. Dump your first note and it will show
-              up here by date.
+          <div className="mt-10 rounded-card border border-edge bg-surface p-7 sm:p-8">
+            <p className="text-lg leading-relaxed text-cream/90">
+              Nothing on the shelf yet. Your notes will line up here by date.
             </p>
+            <PrimaryPill onClick={() => setScreen("add")} className="mt-6">
+              Dump a note
+            </PrimaryPill>
           </div>
         ) : (
-          <ul className="mt-8 space-y-4">
+          <ul className="mt-10 space-y-4">
             {notes.map((note) => (
               <li
                 key={note.id}
-                className="rounded-card border border-edge bg-surface px-5 py-4 sm:px-6 sm:py-5"
+                className="rounded-card border border-edge bg-surface px-6 py-5 sm:px-7"
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className="mono-label text-[0.7rem] text-pink-hot">
@@ -135,7 +135,7 @@ export function NotesView({ userId }: { userId: string }) {
                     <Trash2 strokeWidth={1.6} className="h-4 w-4" />
                   </button>
                 </div>
-                <p className="mt-2.5 whitespace-pre-wrap text-[1.05rem] leading-relaxed text-cream">
+                <p className="mt-3 whitespace-pre-wrap text-[1.05rem] leading-relaxed text-cream">
                   {note.text}
                 </p>
               </li>
@@ -148,26 +148,16 @@ export function NotesView({ userId }: { userId: string }) {
 
   return (
     <section className="mx-auto w-full max-w-2xl">
-      <Kicker>Mes notes de français</Kicker>
-      <h1 className="mt-2 text-5xl font-bold leading-[1.05] tracking-tight text-pink sm:text-6xl">
-        Notes
-      </h1>
-      <p className="mt-5 max-w-lg text-lg leading-relaxed text-cream sm:text-xl">
-        Add your French notes here, and get vocabulary (with
-        masculine/feminine + plural/singular variations), verbs and grammar
-        rules extracted and organised from your notes.
-      </p>
-      <button
-        type="button"
-        onClick={() => setScreen("add")}
-        className="mono-label mt-6 inline-block rounded-full bg-pink-pale px-3.5 py-1.5 text-[0.72rem] text-surface transition-opacity hover:opacity-90"
-      >
+      <ScreenHeader
+        kicker="Mes notes de français"
+        title="Notes"
+        standfirst="Add your French notes here, and get vocabulary (with masculine/feminine + plural/singular variations), verbs and grammar rules extracted and organised from your notes."
+      />
+      <PrimaryPill onClick={() => setScreen("add")} className="mt-7">
         Start adding notes
-      </button>
+      </PrimaryPill>
 
-      <hr className="hairline mt-9 border-t" />
-
-      <div className="mt-9 space-y-4 sm:space-y-5">
+      <div className="mt-10 space-y-4">
         <HomeCard
           tag="Dump"
           title="Add notes"
@@ -191,9 +181,9 @@ export function NotesView({ userId }: { userId: string }) {
 }
 
 /**
- * Full-width editorial card, after the PLAN / BUILD / TEST cards on the
- * reference page: mono tag on the left (with an optional quiet count line
- * under it), bold pale-pink title with a mono subtitle, cream description.
+ * Calm, tappable card: one eyebrow row (tag + icon, with an optional quiet
+ * count), a bold title, a mono subtitle, and one line of body copy. Stacks
+ * the same way at every width so nothing reflows into clutter.
  */
 function HomeCard({
   tag,
@@ -216,41 +206,30 @@ function HomeCard({
     <button
       type="button"
       onClick={onClick}
-      className="group block w-full rounded-card border border-edge bg-surface px-5 py-5 text-left transition-colors hover:border-pink-hot/60 hover:bg-surface-raised sm:px-7 sm:py-6"
+      className="block w-full rounded-card border border-edge bg-surface px-6 py-6 text-left transition-colors hover:border-pink-hot/60 hover:bg-surface-raised sm:px-8"
     >
-      <div className="flex flex-col gap-4 sm:grid sm:grid-cols-[5rem_minmax(0,11rem)_1fr] sm:gap-6">
-        {/* On mobile the icon sits on the tag row so the description keeps
-            the full card width; on desktop it moves to the right. */}
-        <span className="flex items-start justify-between sm:block sm:pt-0.5">
-          <span className="flex flex-col gap-1">
-            <span className="mono-label text-[0.72rem] text-pink-hot">
-              {tag}
-            </span>
-            {tagNote && (
-              <span className="mono-label text-[0.66rem] text-cream-dim">
-                {tagNote}
-              </span>
-            )}
-          </span>
-          <span className="text-pink sm:hidden">{icon}</span>
-        </span>
+      <span className="flex items-start justify-between gap-4">
         <span className="flex flex-col gap-1">
-          <span className="text-xl font-bold tracking-tight text-pink-pale">
-            {title}
-          </span>
-          <span className="mono-label text-[0.66rem] text-cream-dim">
-            {sub}
-          </span>
+          <span className="mono-label text-[0.7rem] text-pink-hot">{tag}</span>
+          {tagNote && (
+            <span className="mono-label text-[0.66rem] text-cream-dim">
+              {tagNote}
+            </span>
+          )}
         </span>
-        <span className="flex items-start justify-between gap-4">
-          <span className="max-w-md text-[1.02rem] leading-relaxed text-cream">
-            {description}
-          </span>
-          <span className="hidden shrink-0 text-pink transition-transform group-hover:translate-x-0.5 sm:block">
-            {icon}
-          </span>
+        <span aria-hidden className="text-pink/80">
+          {icon}
         </span>
-      </div>
+      </span>
+      <span className="mt-3 block text-2xl font-bold tracking-tight text-pink-pale">
+        {title}
+      </span>
+      <span className="mono-label mt-1 block text-[0.66rem] text-cream-dim">
+        {sub}
+      </span>
+      <span className="mt-3 block max-w-md text-[1.02rem] leading-relaxed text-cream/85">
+        {description}
+      </span>
     </button>
   );
 }

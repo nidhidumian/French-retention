@@ -38,7 +38,7 @@ export function Dock({
       aria-label="Sections"
       className="fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.9rem,env(safe-area-inset-bottom))]"
     >
-      <div className="flex gap-1.5 rounded-card border border-edge bg-surface/95 px-2.5 py-2 shadow-[0_16px_48px_rgba(0,0,0,0.55)] backdrop-blur-md sm:gap-2 sm:px-3">
+      <div className="flex gap-2 rounded-[1.4rem] border border-edge bg-surface/95 px-3 py-2.5 shadow-[0_16px_48px_rgba(0,0,0,0.55)] backdrop-blur-md sm:gap-2.5">
         {ITEMS.map(({ id, label, Icon }) => {
           const isActive = active === id;
           return (
@@ -48,10 +48,10 @@ export function Dock({
               onClick={() => onSelect(id)}
               aria-label={label}
               aria-current={isActive ? "page" : undefined}
-              className={`tooltip-trigger relative flex h-[52px] w-[52px] items-center justify-center rounded-[0.8rem] border transition-colors sm:h-14 sm:w-14 ${
+              className={`tooltip-trigger relative flex h-[52px] w-[52px] items-center justify-center rounded-[0.9rem] transition-colors sm:h-14 sm:w-14 ${
                 isActive
-                  ? "border-edge bg-surface-raised text-pink-pale"
-                  : "border-transparent text-cream-dim hover:border-edge-soft hover:bg-surface-raised/60 hover:text-cream active:border-edge active:text-pink-pale"
+                  ? "bg-surface-raised text-pink-pale"
+                  : "text-cream-dim hover:bg-surface-raised/60 hover:text-cream active:text-pink-pale"
               }`}
             >
               <span
