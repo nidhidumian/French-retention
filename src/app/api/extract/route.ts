@@ -137,13 +137,34 @@ class UpstreamError extends Error {
 }
 
 // Default must be a current stable model that supports generateContent with
-// responseJsonSchema structured output; override with GEMINI_MODEL.
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+// responseJsonSchema structured output; Google recommends gemini-3.6-flash
+// for new API keys. Override with GEMINI_MODEL.
+const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
 
-// Google's moving alias for the current stable Flash model. Used as a
-// one-shot fallback when the configured model 404s (retired or renamed),
-// so extraction keeps working without waiting for a code change.
+// Google's moving alias for the current stable Flash model, kept as the
+// last resort so extraction keeps working even if the default is retired.
 const FALLBACK_GEMINI_MODEL = "gemini-flash-latest";
+
+// How many times to retry one model on a transient failure (503 "high
+// demand", 429 rate limit) before moving on, and how long to wait between
+// tries: ~0.5s, 1s, 2s. Total worst-case backoff stays well under the
+// route's 60s budget.
+const MAX_TRANSIENT_RETRIES = 3;
+const RETRY_BACKOFF_MS = [500, 1000, 2000];
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Transient upstream failures worth retrying: overload/high-demand 503s,
+ * rate-limit 429s, and anything Google labels UNAVAILABLE or
+ * RESOURCE_EXHAUSTED. These usually clear in a second or two. */
+function isTransient(error: UpstreamError): boolean {
+  if (error.status === 503 || error.status === 429) return true;
+  return /RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|overloaded/i.test(
+    error.message
+  );
+}
 
 async function callGemini(
   apiKey: string,
@@ -151,28 +172,64 @@ async function callGemini(
   level: CefrLevel,
   stage: ConjugationStage
 ): Promise<unknown> {
-  const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-  try {
-    return await requestGemini(apiKey, model, noteText, level, stage);
-  } catch (error) {
-    if (
-      error instanceof UpstreamError &&
-      error.status === 404 &&
-      model !== FALLBACK_GEMINI_MODEL
-    ) {
-      console.warn(
-        `[extract] Model "${model}" not found (404); retrying with "${FALLBACK_GEMINI_MODEL}".`
-      );
-      return await requestGemini(
-        apiKey,
+  // Fallback chain: GEMINI_MODEL env if set → gemini-3.6-flash → gemini-flash-latest.
+  const models = [
+    ...new Set(
+      [
+        process.env.GEMINI_MODEL,
+        DEFAULT_GEMINI_MODEL,
         FALLBACK_GEMINI_MODEL,
-        noteText,
-        level,
-        stage
-      );
+      ].filter((m): m is string => Boolean(m))
+    ),
+  ];
+
+  let lastError: unknown = null;
+  for (const [modelIndex, model] of models.entries()) {
+    const isLastModel = modelIndex === models.length - 1;
+    for (let attempt = 0; attempt <= MAX_TRANSIENT_RETRIES; attempt++) {
+      try {
+        return await requestGemini(apiKey, model, noteText, level, stage);
+      } catch (error) {
+        lastError = error;
+        if (!(error instanceof UpstreamError)) throw error;
+
+        // A 404 means this model id is dead for this key (retired/renamed);
+        // don't burn retries on it, go straight to the next model.
+        if (error.status === 404) {
+          if (isLastModel) throw error;
+          console.warn(
+            `[extract] Model "${model}" not found (404); falling back to "${models[modelIndex + 1]}".`
+          );
+          break;
+        }
+
+        if (isTransient(error)) {
+          if (attempt < MAX_TRANSIENT_RETRIES) {
+            const delay = RETRY_BACKOFF_MS[attempt];
+            console.warn(
+              `[extract] Transient Gemini error (${error.status ?? "n/a"}) on "${model}", retry ${attempt + 1}/${MAX_TRANSIENT_RETRIES} in ${delay}ms.`
+            );
+            await sleep(delay);
+            continue;
+          }
+          // Retries exhausted on this model; a different model may still be
+          // less busy, so fall through the chain before giving up.
+          if (isLastModel) throw error;
+          console.warn(
+            `[extract] "${model}" still failing after ${MAX_TRANSIENT_RETRIES} retries; trying "${models[modelIndex + 1]}".`
+          );
+          break;
+        }
+
+        // Non-transient, non-404 (bad request, blocked prompt, auth):
+        // another model won't fix it, surface immediately.
+        throw error;
+      }
     }
-    throw error;
   }
+  // Unreachable in practice (the loops always throw or return), but keeps
+  // TypeScript's control-flow analysis satisfied.
+  throw lastError ?? new Error("No Gemini model could be reached.");
 }
 
 async function requestGemini(

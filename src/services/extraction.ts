@@ -97,6 +97,15 @@ export async function extractNote(
     } catch {
       // Non-JSON error body; fall through to the generic message.
     }
+    // The server already retried transient failures; if Google is still
+    // overloaded, say so calmly instead of a scary generic error.
+    if (detail && /503|high demand|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(detail)) {
+      return {
+        ok: false,
+        error: "Google's AI is busy right now — tap Try again in a moment.",
+        missingKey: false,
+      };
+    }
     const base = message ?? "Extraction failed. Please try again.";
     return {
       ok: false,

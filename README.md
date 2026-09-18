@@ -93,8 +93,10 @@ The key stays server-side (`src/app/api/extract/route.ts`); it is never
 sent to the browser. If you already have the key under the name
 `GOOGLE_GENERATIVE_AI_API_KEY` (the Vercel AI SDK's spelling), that works
 too. Optional: set `GEMINI_MODEL` to override the default
-(`gemini-2.5-flash`) — pick a model that supports `generateContent` with
-JSON-schema structured output.
+(`gemini-3.6-flash`) — pick a model that supports `generateContent` with
+JSON-schema structured output. If a model is briefly overloaded the route
+retries automatically, and if a model id stops existing it falls back to
+`gemini-flash-latest` on its own.
 
 **If extraction fails on Vercel:** environment-variable changes (adding
 `GEMINI_API_KEY`, changing `GEMINI_MODEL`) only take effect after a
