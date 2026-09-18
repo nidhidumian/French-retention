@@ -135,7 +135,7 @@ class UpstreamError extends Error {
 
 // Default must be a current stable model that supports generateContent with
 // responseJsonSchema structured output; override with GEMINI_MODEL.
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
 
 async function callGemini(
   apiKey: string,
