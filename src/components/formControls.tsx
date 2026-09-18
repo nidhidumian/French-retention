@@ -44,12 +44,30 @@ export function CheckboxRow({
 }) {
   return (
     <label className="flex cursor-pointer items-start gap-3.5">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-[1.15rem] w-[1.15rem] shrink-0 cursor-pointer appearance-none rounded-[0.35rem] border border-edge bg-maroon/60 transition-colors checked:border-pink-hot checked:bg-pink-hot"
-      />
+      {/* Native checkbox (keyboard, screen readers, form semantics) restyled
+          with a tick drawn on top so the checked state is unmistakable. */}
+      <span className="relative mt-1 h-[1.15rem] w-[1.15rem] shrink-0">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer h-full w-full cursor-pointer appearance-none rounded-[0.35rem] border border-edge bg-maroon/60 transition-colors checked:border-pink-hot checked:bg-pink-hot"
+        />
+        <svg
+          viewBox="0 0 12 12"
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 m-auto h-[0.75rem] w-[0.75rem] text-maroon opacity-0 transition-opacity peer-checked:opacity-100"
+        >
+          <path
+            d="M2 6.4 4.7 9 10 3.4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
       <span className="text-[0.98rem] leading-relaxed text-cream">
         {children}
       </span>

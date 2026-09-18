@@ -29,6 +29,13 @@ builds and runs, but shows a "Connect Clerk" notice instead of sign-in.
    - `CLERK_SECRET_KEY` (starts with `sk_`)
 3. Restart `npm run dev`.
 
+The sign-up form asks for a password of at least 8 characters. Clerk also
+checks the password server-side against the policy set in its dashboard, so
+if your Clerk application enforces something stricter (say a 15-character
+minimum), sign-ups the form accepts will still be rejected. Set the policy
+to allow 8+ characters under **Configure → User & authentication →
+Password** in the Clerk Dashboard.
+
 Shortcut: `npx clerk@latest init` creates a development instance and writes
 the keys to `.env.local` for you; run `npx clerk auth login` later to claim
 it into your Clerk account.
