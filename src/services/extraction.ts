@@ -84,16 +84,23 @@ export async function extractNote(
   if (!response.ok) {
     let code: string | null = null;
     let message: string | null = null;
+    let detail: string | null = null;
     try {
       const body = await response.json();
       if (typeof body?.code === "string") code = body.code;
       if (typeof body?.error === "string") message = body.error;
+      // Sanitized upstream detail (never contains secrets) so a "hiccup"
+      // tells the user what actually went wrong.
+      if (typeof body?.detail === "string" && body.detail) {
+        detail = body.detail;
+      }
     } catch {
       // Non-JSON error body; fall through to the generic message.
     }
+    const base = message ?? "Extraction failed. Please try again.";
     return {
       ok: false,
-      error: message ?? "Extraction failed. Please try again.",
+      error: detail ? `${base} (${detail})` : base,
       missingKey: code === "missing-key",
     };
   }
