@@ -7,10 +7,30 @@
  * this file only.
  */
 
+/** One fix the extractor made, with a short plain-English why. */
+export type Correction = {
+  original: string;
+  corrected: string;
+  why: string;
+};
+
+/** What extraction left behind on a note: the corrected text, each fix
+ * explained, an optional encouragement, and how much landed in the
+ * libraries. Notes stay the source of truth; this is the receipt. */
+export type NoteExtraction = {
+  correctedText: string;
+  corrections: Correction[];
+  encouragement: string | null;
+  extractedAt: string; // ISO timestamp
+  counts: { words: number; verbs: number; rules: number };
+};
+
 export type Note = {
   id: string;
   text: string;
   createdAt: string; // ISO timestamp
+  /** Present once the note has been corrected + extracted. */
+  extraction?: NoteExtraction;
 };
 
 export type NotesResult =
@@ -78,5 +98,18 @@ export function addNote(userId: string, text: string): NotesResult {
 export function deleteNote(userId: string, id: string): NotesResult {
   const all = readAll(userId).filter((n) => n.id !== id);
   if (!writeAll(userId, all)) return { ok: false, error: "Could not delete note." };
+  return listNotes(userId);
+}
+
+/** Attach an extraction receipt to a note (or replace an older one). */
+export function setNoteExtraction(
+  userId: string,
+  id: string,
+  extraction: NoteExtraction
+): NotesResult {
+  const all = readAll(userId).map((n) =>
+    n.id === id ? { ...n, extraction } : n
+  );
+  if (!writeAll(userId, all)) return { ok: false, error: "Could not save extraction." };
   return listNotes(userId);
 }

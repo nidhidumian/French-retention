@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Library, Plus, Trash2 } from "lucide-react";
+import { Library, MoveRight, Plus, Sparkles, Trash2 } from "lucide-react";
 import {
   addNote,
   deleteNote,
   listNotes,
   type Note,
 } from "@/services/notes";
+import { extractNote } from "@/services/extraction";
 import { BackLink, Kicker, PrimaryPill, ScreenHeader } from "./editorial";
 
-export type NotesScreen = "home" | "add" | "library";
+export type NotesScreen = "home" | "add" | "library" | "extract";
 
 const dateFormat = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
@@ -32,11 +33,37 @@ export function NotesView({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // The note the extract screen is showing, plus its in-flight state.
+  const [activeNote, setActiveNote] = useState<Note | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<{
+    message: string;
+    missingKey: boolean;
+  } | null>(null);
+
   // localStorage only exists in the browser, so load after mount.
   useEffect(() => {
     const result = listNotes(userId);
     if (result.ok) setNotes(result.notes);
   }, [userId]);
+
+  async function runExtraction(note: Note) {
+    setActiveNote(note);
+    setExtractError(null);
+    setExtracting(true);
+    setScreen("extract");
+
+    const outcome = await extractNote(userId, note);
+    setExtracting(false);
+    if (!outcome.ok) {
+      setExtractError({ message: outcome.error, missingKey: outcome.missingKey });
+      return;
+    }
+    // Re-read so the library list shows the extraction badge too.
+    const refreshed = listNotes(userId);
+    if (refreshed.ok) setNotes(refreshed.notes);
+    setActiveNote({ ...note, extraction: outcome.extraction });
+  }
 
   function handleSave() {
     const result = addNote(userId, draft);
@@ -47,7 +74,8 @@ export function NotesView({
     setNotes(result.notes);
     setDraft("");
     setError(null);
-    setScreen("library");
+    // listNotes sorts newest first, so the note just saved is at the top.
+    void runExtraction(result.notes[0]);
   }
 
   function handleDelete(id: string) {
@@ -90,6 +118,18 @@ export function NotesView({
           </button>
         </div>
       </section>
+    );
+  }
+
+  if (screen === "extract" && activeNote) {
+    return (
+      <ExtractScreen
+        note={activeNote}
+        extracting={extracting}
+        error={extractError}
+        onRetry={() => void runExtraction(activeNote)}
+        onDone={() => setScreen("library")}
+      />
     );
   }
 
@@ -138,6 +178,22 @@ export function NotesView({
                 <p className="mt-3 whitespace-pre-wrap text-[1.05rem] leading-relaxed text-cream">
                   {note.text}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (note.extraction) {
+                      setActiveNote(note);
+                      setExtractError(null);
+                      setScreen("extract");
+                    } else {
+                      void runExtraction(note);
+                    }
+                  }}
+                  className="mono-label mt-4 flex items-center gap-1.5 text-[0.7rem] text-pink-hot transition-colors hover:text-pink-pale"
+                >
+                  <Sparkles strokeWidth={1.6} className="h-3.5 w-3.5" />
+                  {note.extraction ? "See corrections & extracts" : "Extract"}
+                </button>
               </li>
             ))}
           </ul>
@@ -176,6 +232,143 @@ export function NotesView({
           icon={<Library strokeWidth={1.6} className="h-6 w-6" />}
         />
       </div>
+    </section>
+  );
+}
+
+/**
+ * What happens after a note is saved (or Extract is tapped): a loading
+ * beat while the note is corrected and mined, then the corrected note,
+ * every fix with its why, and how much landed in the libraries.
+ */
+function ExtractScreen({
+  note,
+  extracting,
+  error,
+  onRetry,
+  onDone,
+}: {
+  note: Note;
+  extracting: boolean;
+  error: { message: string; missingKey: boolean } | null;
+  onRetry: () => void;
+  onDone: () => void;
+}) {
+  if (extracting) {
+    return (
+      <section className="mx-auto w-full max-w-2xl">
+        <Kicker className="mt-8">Reading your note</Kicker>
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-pink sm:text-5xl">
+          Extracting…
+        </h1>
+        <p className="mt-5 max-w-lg text-lg leading-relaxed text-cream/90">
+          Correcting the French and pulling out the words, verbs and rules
+          worth keeping. A few seconds.
+        </p>
+        <div className="mt-8 animate-pulse rounded-card border border-edge bg-surface p-6 sm:p-7">
+          <p className="whitespace-pre-wrap text-[1.05rem] leading-relaxed text-cream-dim">
+            {note.text}
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="mx-auto w-full max-w-2xl">
+        <BackLink onClick={onDone} />
+        <Kicker className="mt-8">Extraction paused</Kicker>
+        <h1 className="mt-3 text-4xl font-bold tracking-tight text-pink sm:text-5xl">
+          {error.missingKey ? "One key missing" : "That didn't work"}
+        </h1>
+        <p className="mt-5 max-w-lg text-lg leading-relaxed text-cream/90">
+          {error.message}
+        </p>
+        <p className="mt-3 max-w-lg text-[1.02rem] leading-relaxed text-cream-dim">
+          Your note is safe on the shelf — extraction can run on it any time.
+        </p>
+        {!error.missingKey && (
+          <PrimaryPill onClick={onRetry} className="mt-7">
+            Try again
+          </PrimaryPill>
+        )}
+      </section>
+    );
+  }
+
+  const extraction = note.extraction;
+  if (!extraction) return null;
+  const { counts } = extraction;
+
+  return (
+    <section className="mx-auto w-full max-w-2xl">
+      <BackLink onClick={onDone} />
+      <Kicker className="mt-8">Corrected &amp; extracted</Kicker>
+      <h1 className="mt-3 text-4xl font-bold tracking-tight text-pink sm:text-5xl">
+        Your note, polished
+      </h1>
+
+      <div className="mt-8 rounded-card border border-edge bg-surface p-6 sm:p-7">
+        <p className="mono-label text-[0.7rem] text-pink-hot">Corrected note</p>
+        <p className="mt-3 whitespace-pre-wrap text-[1.05rem] leading-relaxed text-cream">
+          {extraction.correctedText}
+        </p>
+      </div>
+
+      <p className="mono-label mt-10 text-[0.7rem] text-pink-hot">
+        What changed and why
+      </p>
+      {extraction.corrections.length === 0 ? (
+        <p className="mt-3 text-lg leading-relaxed text-cream/90">
+          Nothing to fix — this note was already right.
+        </p>
+      ) : (
+        <ul className="mt-2">
+          {extraction.corrections.map((c, i) => (
+            <li
+              key={`${c.original}-${i}`}
+              className="hairline border-b py-5"
+            >
+              <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[1.02rem] leading-relaxed">
+                <span className="text-cream-dim line-through decoration-coral/70">
+                  {c.original}
+                </span>
+                <MoveRight
+                  strokeWidth={1.6}
+                  className="h-4 w-4 shrink-0 text-pink-hot"
+                  aria-hidden
+                />
+                <span className="font-bold text-pink-pale">{c.corrected}</span>
+              </p>
+              <p className="mt-2 text-[0.98rem] leading-relaxed text-cream/85">
+                {c.why}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {extraction.encouragement && (
+        <p className="mt-8 text-[1.02rem] italic leading-relaxed text-quote">
+          {extraction.encouragement}
+        </p>
+      )}
+
+      <p className="mono-label mt-10 text-[0.7rem] text-pink-hot">
+        Added to your libraries
+      </p>
+      <p className="mt-3 text-lg leading-relaxed text-cream/90">
+        {counts.words} {counts.words === 1 ? "word" : "words"} · {counts.verbs}{" "}
+        {counts.verbs === 1 ? "verb" : "verbs"} · {counts.rules}{" "}
+        {counts.rules === 1 ? "rule" : "rules"} — find them under Vocabulary,
+        Verbs and Grammar in the dock. Repeats reinforce what&apos;s already
+        there.
+      </p>
+
+      <PrimaryPill onClick={onDone} className="mt-8">
+        Done
+      </PrimaryPill>
     </section>
   );
 }
