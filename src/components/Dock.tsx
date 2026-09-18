@@ -1,27 +1,30 @@
 "use client";
 
 import {
-  NotebookPen,
-  BookOpen,
-  Zap,
-  ListTree,
-  Layers,
-  type LucideIcon,
-} from "lucide-react";
+  BookMagnifierIcon,
+  NotesStackIcon,
+  ScrollIcon,
+  TicketCheckIcon,
+  TimerIcon,
+} from "./icons";
 import type { Section } from "./sections";
 
-const ITEMS: { id: Section; label: string; Icon: LucideIcon }[] = [
-  { id: "notes", label: "Notes", Icon: NotebookPen },
-  { id: "vocabulary", label: "Vocabulary", Icon: BookOpen },
-  { id: "verbs", label: "Verbs", Icon: Zap },
-  { id: "grammar", label: "Grammar", Icon: ListTree },
-  { id: "quiz", label: "Quiz", Icon: Layers },
+const ITEMS: {
+  id: Section;
+  label: string;
+  Icon: (props: { className?: string; strokeWidth?: number }) => React.ReactNode;
+}[] = [
+  { id: "notes", label: "Notes", Icon: NotesStackIcon },
+  { id: "vocabulary", label: "Vocabulary", Icon: BookMagnifierIcon },
+  { id: "verbs", label: "Verbs", Icon: ScrollIcon },
+  { id: "grammar", label: "Grammar", Icon: TicketCheckIcon },
+  { id: "quiz", label: "Quiz", Icon: TimerIcon },
 ];
 
 /**
  * macOS-Finder-style dock: icons only, with the section name in a small
  * rounded tooltip above the icon on hover/focus/press. The active section
- * gets a pale-pink tint and a Finder-like dot under the icon.
+ * gets a raised tile and pale-pink tint — no dot under the icon.
  */
 export function Dock({
   active,
@@ -60,12 +63,6 @@ export function Dock({
               <Icon
                 strokeWidth={1.6}
                 className="h-6 w-6 sm:h-[1.6rem] sm:w-[1.6rem]"
-              />
-              <span
-                aria-hidden
-                className={`absolute bottom-1 h-1 w-1 rounded-full bg-pink transition-opacity ${
-                  isActive ? "opacity-90" : "opacity-0"
-                }`}
               />
             </button>
           );

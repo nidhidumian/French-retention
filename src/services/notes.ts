@@ -1,9 +1,10 @@
 /**
  * Notes service — owns how notes are stored and retrieved.
  *
- * Storage is localStorage for now (shell-UI milestone). The rest of the app
- * only talks to this module, so swapping in an API/database later means
- * changing this file only.
+ * Storage is localStorage for now, keyed per Clerk user so two accounts on
+ * the same browser never see each other's notes. The rest of the app only
+ * talks to this module, so swapping in an API/database later means changing
+ * this file only.
  */
 
 export type Note = {
@@ -16,12 +17,14 @@ export type NotesResult =
   | { ok: true; notes: Note[] }
   | { ok: false; error: string };
 
-const STORAGE_KEY = "french-retention.notes.v1";
+function storageKey(userId: string): string {
+  return `french-retention.notes.v1.${userId}`;
+}
 
-function readAll(): Note[] {
+function readAll(userId: string): Note[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey(userId));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -38,25 +41,25 @@ function readAll(): Note[] {
   }
 }
 
-function writeAll(notes: Note[]): boolean {
+function writeAll(userId: string, notes: Note[]): boolean {
   if (typeof window === "undefined") return false;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    window.localStorage.setItem(storageKey(userId), JSON.stringify(notes));
     return true;
   } catch {
     return false;
   }
 }
 
-export function listNotes(): NotesResult {
+export function listNotes(userId: string): NotesResult {
   // Newest first — the app shows notes by date.
-  const notes = [...readAll()].sort((a, b) =>
+  const notes = [...readAll(userId)].sort((a, b) =>
     b.createdAt.localeCompare(a.createdAt)
   );
   return { ok: true, notes };
 }
 
-export function addNote(text: string): NotesResult {
+export function addNote(userId: string, text: string): NotesResult {
   const trimmed = text.trim();
   if (!trimmed) return { ok: false, error: "Note is empty." };
   const note: Note = {
@@ -67,13 +70,13 @@ export function addNote(text: string): NotesResult {
     text: trimmed,
     createdAt: new Date().toISOString(),
   };
-  const all = [...readAll(), note];
-  if (!writeAll(all)) return { ok: false, error: "Could not save note." };
-  return listNotes();
+  const all = [...readAll(userId), note];
+  if (!writeAll(userId, all)) return { ok: false, error: "Could not save note." };
+  return listNotes(userId);
 }
 
-export function deleteNote(id: string): NotesResult {
-  const all = readAll().filter((n) => n.id !== id);
-  if (!writeAll(all)) return { ok: false, error: "Could not delete note." };
-  return listNotes();
+export function deleteNote(userId: string, id: string): NotesResult {
+  const all = readAll(userId).filter((n) => n.id !== id);
+  if (!writeAll(userId, all)) return { ok: false, error: "Could not delete note." };
+  return listNotes(userId);
 }

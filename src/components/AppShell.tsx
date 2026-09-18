@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, Layers, ListTree, Settings, Zap } from "lucide-react";
+import { Settings } from "lucide-react";
 import { Dock } from "./Dock";
 import { NotesView } from "./NotesView";
 import { PlaceholderView } from "./PlaceholderView";
 import { SettingsPanel } from "./SettingsPanel";
+import { VerbsView } from "./VerbsView";
+import { VocabularyView } from "./VocabularyView";
+import { TicketCheckIcon, TimerIcon } from "./icons";
 import type { Section } from "./sections";
+import type { FrenchProfile } from "@/services/onboarding";
 
 const PLACEHOLDERS: Record<
-  Exclude<Section, "notes">,
+  "grammar" | "quiz",
   {
     kicker: string;
     title: string;
@@ -18,30 +22,6 @@ const PLACEHOLDERS: Record<
     icon: React.ReactNode;
   }
 > = {
-  vocabulary: {
-    kicker: "Chapter 02 · Words",
-    title: "Vocabulary",
-    description:
-      "Every word your notes give up, kept the way a magazine keeps an index — gender, plural, the lot.",
-    contents: [
-      "Words extracted from your own notes",
-      "Gender and plural for every noun",
-      "Phonetics you can actually say out loud",
-    ],
-    icon: <BookOpen strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />,
-  },
-  verbs: {
-    kicker: "Chapter 03 · Action",
-    title: "Verbs",
-    description:
-      "Conjugations and phonetics for the verbs you actually meet — not the ones a textbook thinks you should.",
-    contents: [
-      "The verbs your notes keep mentioning",
-      "The conjugations that matter first",
-      "Sound-it-out phonetics beside each form",
-    ],
-    icon: <Zap strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />,
-  },
   grammar: {
     kicker: "Chapter 04 · Rules",
     title: "Grammar",
@@ -52,7 +32,9 @@ const PLACEHOLDERS: Record<
       "A short, human why for each one",
       "Examples pulled from your notes",
     ],
-    icon: <ListTree strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />,
+    icon: (
+      <TicketCheckIcon strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />
+    ),
   },
   quiz: {
     kicker: "Chapter 05 · Recall",
@@ -64,11 +46,21 @@ const PLACEHOLDERS: Record<
       "Missed cards return sooner",
       "Known cards drift further out",
     ],
-    icon: <Layers strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />,
+    icon: <TimerIcon strokeWidth={1.5} className="h-8 w-8 sm:h-9 sm:w-9" />,
   },
 };
 
-export function AppShell() {
+export function AppShell({
+  userId,
+  firstName,
+  email,
+  profile,
+}: {
+  userId: string;
+  firstName: string | null;
+  email: string | null;
+  profile: FrenchProfile;
+}) {
   const [section, setSection] = useState<Section>("notes");
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -92,16 +84,26 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-5 pb-40 pt-16 sm:px-8 sm:pt-24">
-        {section === "notes" ? (
-          <NotesView />
-        ) : (
+        {section === "notes" && <NotesView userId={userId} />}
+        {section === "vocabulary" && <VocabularyView userId={userId} />}
+        {section === "verbs" && (
+          <VerbsView userId={userId} profile={profile} />
+        )}
+        {(section === "grammar" || section === "quiz") && (
           <PlaceholderView {...PLACEHOLDERS[section]} />
         )}
       </main>
 
       <Dock active={section} onSelect={setSection} />
 
-      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && (
+        <SettingsPanel
+          onClose={() => setSettingsOpen(false)}
+          firstName={firstName}
+          email={email}
+          profile={profile}
+        />
+      )}
     </div>
   );
 }

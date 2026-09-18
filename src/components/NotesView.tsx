@@ -20,7 +20,7 @@ const dateFormat = new Intl.DateTimeFormat("en-GB", {
   minute: "2-digit",
 });
 
-export function NotesView() {
+export function NotesView({ userId }: { userId: string }) {
   const [screen, setScreen] = useState<NotesScreen>("home");
   const [notes, setNotes] = useState<Note[]>([]);
   const [draft, setDraft] = useState("");
@@ -28,12 +28,12 @@ export function NotesView() {
 
   // localStorage only exists in the browser, so load after mount.
   useEffect(() => {
-    const result = listNotes();
+    const result = listNotes(userId);
     if (result.ok) setNotes(result.notes);
-  }, []);
+  }, [userId]);
 
   function handleSave() {
-    const result = addNote(draft);
+    const result = addNote(userId, draft);
     if (!result.ok) {
       setError(result.error);
       return;
@@ -45,7 +45,7 @@ export function NotesView() {
   }
 
   function handleDelete(id: string) {
-    const result = deleteNote(id);
+    const result = deleteNote(userId, id);
     if (result.ok) setNotes(result.notes);
   }
 
@@ -100,11 +100,11 @@ export function NotesView() {
       <section className="mx-auto w-full max-w-2xl">
         <BackLink onClick={() => setScreen("home")} />
         <Kicker className="mt-6">The shelf</Kicker>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-2">
           <h1 className="text-4xl font-bold tracking-tight text-pink sm:text-5xl">
             Notes library
           </h1>
-          <span className="mono-label rounded-full bg-pink-pale px-3 py-1 text-[0.72rem] text-surface">
+          <span className="mono-label text-[0.72rem] text-cream-dim">
             {notes.length} {notes.length === 1 ? "note" : "notes"}
           </span>
         </div>
@@ -148,37 +148,42 @@ export function NotesView() {
 
   return (
     <section className="mx-auto w-full max-w-2xl">
-      <Kicker>Personal field notes</Kicker>
+      <Kicker>Mes notes de français</Kicker>
       <h1 className="mt-2 text-5xl font-bold leading-[1.05] tracking-tight text-pink sm:text-6xl">
         Notes
       </h1>
       <p className="mt-5 max-w-lg text-lg leading-relaxed text-cream sm:text-xl">
-        Everything you meet in French lands here first. The app turns it into
-        vocab, verbs and grammar worth keeping.
+        Add your French notes here, and get vocabulary (with
+        masculine/feminine + plural/singular variations), verbs and grammar
+        rules extracted and organised from your notes.
       </p>
-      <p className="mono-label mt-6 inline-block rounded-full bg-pink-pale px-3.5 py-1.5 text-[0.72rem] text-surface">
-        Field notes × français
-      </p>
+      <button
+        type="button"
+        onClick={() => setScreen("add")}
+        className="mono-label mt-6 inline-block rounded-full bg-pink-pale px-3.5 py-1.5 text-[0.72rem] text-surface transition-opacity hover:opacity-90"
+      >
+        Start adding notes
+      </button>
 
       <hr className="hairline mt-9 border-t" />
 
       <div className="mt-9 space-y-4 sm:space-y-5">
         <HomeCard
           tag="Dump"
-          title="Add note"
+          title="Add notes"
           sub="Today's French"
-          description="A phrase, a correction, a word that surprised you. It stays on this device for now."
+          description="A phrase, a correction, a word that surprised you. Add it all here."
           onClick={() => setScreen("add")}
           icon={<Plus strokeWidth={1.6} className="h-6 w-6" />}
         />
         <HomeCard
           tag="Shelf"
+          tagNote={`${notes.length} ${notes.length === 1 ? "note" : "notes"}`}
           title="Notes library"
           sub="By date, newest first"
-          description="Everything you've dumped so far, waiting to become vocab, verbs and grammar."
+          description="Everything you've dumped so far, in case you want to revisit your unfiltered notes."
           onClick={() => setScreen("library")}
           icon={<Library strokeWidth={1.6} className="h-6 w-6" />}
-          badge={`${notes.length} ${notes.length === 1 ? "note" : "notes"}`}
         />
       </div>
     </section>
@@ -187,32 +192,26 @@ export function NotesView() {
 
 /**
  * Full-width editorial card, after the PLAN / BUILD / TEST cards on the
- * reference page: mono tag on the left, bold pale-pink title with a mono
- * subtitle, cream description, thin hairline border on a lighter maroon.
+ * reference page: mono tag on the left (with an optional quiet count line
+ * under it), bold pale-pink title with a mono subtitle, cream description.
  */
 function HomeCard({
   tag,
+  tagNote,
   title,
   sub,
   description,
-  badge,
   icon,
   onClick,
 }: {
   tag: string;
+  tagNote?: string;
   title: string;
   sub: string;
   description: string;
-  badge?: string;
   icon: React.ReactNode;
   onClick: () => void;
 }) {
-  const badgePill = badge !== undefined && (
-    <span className="mono-label whitespace-nowrap rounded-full bg-pink-pale px-2.5 py-1 text-[0.66rem] text-surface">
-      {badge}
-    </span>
-  );
-
   return (
     <button
       type="button"
@@ -220,16 +219,20 @@ function HomeCard({
       className="group block w-full rounded-card border border-edge bg-surface px-5 py-5 text-left transition-colors hover:border-pink-hot/60 hover:bg-surface-raised sm:px-7 sm:py-6"
     >
       <div className="flex flex-col gap-4 sm:grid sm:grid-cols-[5rem_minmax(0,11rem)_1fr] sm:gap-6">
-        {/* On mobile the icon + badge sit on the tag row so the description
-            keeps the full card width; on desktop they move to the right. */}
-        <span className="flex items-center justify-between sm:block sm:pt-0.5">
-          <span className="mono-label text-[0.72rem] text-pink-hot">
-            {tag}
+        {/* On mobile the icon sits on the tag row so the description keeps
+            the full card width; on desktop it moves to the right. */}
+        <span className="flex items-start justify-between sm:block sm:pt-0.5">
+          <span className="flex flex-col gap-1">
+            <span className="mono-label text-[0.72rem] text-pink-hot">
+              {tag}
+            </span>
+            {tagNote && (
+              <span className="mono-label text-[0.66rem] text-cream-dim">
+                {tagNote}
+              </span>
+            )}
           </span>
-          <span className="flex items-center gap-3 text-pink sm:hidden">
-            {badgePill}
-            {icon}
-          </span>
+          <span className="text-pink sm:hidden">{icon}</span>
         </span>
         <span className="flex flex-col gap-1">
           <span className="text-xl font-bold tracking-tight text-pink-pale">
@@ -243,9 +246,8 @@ function HomeCard({
           <span className="max-w-md text-[1.02rem] leading-relaxed text-cream">
             {description}
           </span>
-          <span className="hidden shrink-0 flex-col items-end gap-2 text-pink transition-transform group-hover:translate-x-0.5 sm:flex">
+          <span className="hidden shrink-0 text-pink transition-transform group-hover:translate-x-0.5 sm:block">
             {icon}
-            {badgePill}
           </span>
         </span>
       </div>
