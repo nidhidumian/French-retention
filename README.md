@@ -174,3 +174,5 @@ node scripts/capture-screens.mjs
 
 captures desktop and 430px screenshots of every screen into
 `/tmp/polish-shots` (uses Playwright, a dev dependency).
+
+<!-- trigger vercel deploy -->
