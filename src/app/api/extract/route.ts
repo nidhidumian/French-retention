@@ -125,17 +125,25 @@ function redactSecrets(text: string): string {
  * route may safely include in its JSON error response. */
 class UpstreamError extends Error {
   readonly safeDetail: string;
+  /** HTTP status Gemini answered with, when the failure was an HTTP error. */
+  readonly status: number | null;
 
-  constructor(message: string, safeDetail: string) {
+  constructor(message: string, safeDetail: string, status: number | null = null) {
     super(redactSecrets(message));
     this.name = "UpstreamError";
     this.safeDetail = redactSecrets(safeDetail);
+    this.status = status;
   }
 }
 
 // Default must be a current stable model that supports generateContent with
 // responseJsonSchema structured output; override with GEMINI_MODEL.
 const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
+// Google's moving alias for the current stable Flash model. Used as a
+// one-shot fallback when the configured model 404s (retired or renamed),
+// so extraction keeps working without waiting for a code change.
+const FALLBACK_GEMINI_MODEL = "gemini-flash-latest";
 
 async function callGemini(
   apiKey: string,
@@ -144,6 +152,36 @@ async function callGemini(
   stage: ConjugationStage
 ): Promise<unknown> {
   const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+  try {
+    return await requestGemini(apiKey, model, noteText, level, stage);
+  } catch (error) {
+    if (
+      error instanceof UpstreamError &&
+      error.status === 404 &&
+      model !== FALLBACK_GEMINI_MODEL
+    ) {
+      console.warn(
+        `[extract] Model "${model}" not found (404); retrying with "${FALLBACK_GEMINI_MODEL}".`
+      );
+      return await requestGemini(
+        apiKey,
+        FALLBACK_GEMINI_MODEL,
+        noteText,
+        level,
+        stage
+      );
+    }
+    throw error;
+  }
+}
+
+async function requestGemini(
+  apiKey: string,
+  model: string,
+  noteText: string,
+  level: CefrLevel,
+  stage: ConjugationStage
+): Promise<unknown> {
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
     {
@@ -185,7 +223,8 @@ async function callGemini(
       }` +
         (response.status === 404
           ? ` (model "${model}" — check GEMINI_MODEL)`
-          : "")
+          : ""),
+      response.status
     );
   }
   const payload = await response.json();
