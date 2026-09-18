@@ -90,16 +90,10 @@ Mistral gives one away free:
 
 The key stays server-side (`src/app/api/extract/route.ts`); it is never
 sent to the browser. Optional: set `MISTRAL_MODEL` to override the default
-(`mistral-small-latest`). If Mistral is briefly overloaded the route
-retries automatically before showing an error.
-
-**Google Gemini (optional backup):** if a `GEMINI_API_KEY` (or
-`GOOGLE_GENERATIVE_AI_API_KEY`) is also set, the route silently falls back
-to Gemini when Mistral fails — and keeps extraction working on Gemini alone
-until you add the Mistral key. Gemini is no longer required; it is safe to
-remove its key once `MISTRAL_API_KEY` is in place. `GEMINI_MODEL` overrides
-the backup model (default `gemini-3.6-flash`, falling back to
-`gemini-flash-latest` if that id ever retires).
+(`mistral-small-latest`). If Mistral is briefly overloaded (503) or
+rate-limits (429), the route retries automatically before showing an
+error. Mistral is the only provider — without `MISTRAL_API_KEY` the route
+returns a clear "add the key" message and never calls anything else.
 
 **If extraction fails on Vercel:** environment-variable changes (adding
 `MISTRAL_API_KEY`, changing `MISTRAL_MODEL`) only take effect after a
@@ -155,8 +149,7 @@ Not built yet: spaced repetition, quiz sessions, Resend email.
 - `src/app/` — Next.js pages: the app (`page.tsx`), auth (`welcome`,
   `sign-in`, `sign-up`), `onboarding`, `terms`, `privacy`. Design tokens
   live in `globals.css`. `api/extract` is the server route that calls
-  Mistral, with Gemini as an optional backup (signed-in users only; the
-  keys never reach the browser).
+  Mistral (signed-in users only; the key never reaches the browser).
 - `src/middleware.ts` — Clerk route protection: signed-out users only see
   the auth pages.
 - `src/components/` — shell UI (dock, notes, vocabulary, verbs, grammar,
