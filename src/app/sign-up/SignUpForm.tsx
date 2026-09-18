@@ -12,7 +12,10 @@ import {
   PrimaryButton,
   TextInput,
 } from "@/components/formControls";
-import { clerkErrorMessage } from "@/services/clerkErrors";
+import {
+  clerkErrorMessage,
+  signUpIncompleteMessage,
+} from "@/services/clerkErrors";
 
 /** Keep in sync with the Clerk Dashboard password policy (see README). */
 const PASSWORD_MIN_LENGTH = 8;
@@ -37,10 +40,38 @@ export function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  /**
+   * Activate the session and move into the app. `signUp` is a live view of
+   * the attempt — after `password()` / `verifyEmailCode()` resolve, its
+   * `status` and `createdSessionId` reflect the server's latest state, so
+   * check them before finalizing. Calling `finalize()` blindly fails with
+   * the opaque "Cannot finalize sign-up without a created session."
+   * whenever `createdSessionId` is still null.
+   */
   async function finishAndEnter() {
+    if (signUp.status !== "complete") {
+      // The instance wants more than this form collected (e.g. a phone
+      // number configured as required in the Clerk Dashboard).
+      setError(
+        signUpIncompleteMessage(signUp.missingFields, signUp.unverifiedFields)
+      );
+      return;
+    }
+    if (!signUp.createdSessionId) {
+      // Verification succeeded and the account exists, but Clerk returned
+      // no session to activate. Don't dead-end — the fresh credentials
+      // work on the sign-in page, so send the user there with a notice.
+      router.push("/sign-in?notice=account-ready");
+      return;
+    }
+    // finalize() is the v7 future-API equivalent of
+    // setActive({ session: signUp.createdSessionId }).
     const { error: finalizeError } = await signUp.finalize();
     if (finalizeError) {
-      setError(clerkErrorMessage(finalizeError));
+      setError(
+        `${clerkErrorMessage(finalizeError)} Your account may already ` +
+          "exist — try logging in with your email and password."
+      );
       return;
     }
     router.push("/onboarding");
@@ -94,7 +125,9 @@ export function SignUpForm() {
         setStep("verify");
         return;
       }
-      setError("Sign-up needs a step this form doesn't support yet.");
+      setError(
+        signUpIncompleteMessage(signUp.missingFields, signUp.unverifiedFields)
+      );
     } finally {
       setBusy(false);
     }
