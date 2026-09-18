@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Jost } from "next/font/google";
 import "./globals.css";
@@ -26,9 +27,17 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Without a publishable key ClerkProvider throws, so the app renders
+  // bare and each page shows a setup notice instead (services/clerkConfig).
+  const clerkKeyPresent = Boolean(
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+  );
+
   return (
     <html lang="en" className={`${jost.variable} ${plexMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        {clerkKeyPresent ? <ClerkProvider>{children}</ClerkProvider> : children}
+      </body>
     </html>
   );
 }
