@@ -97,9 +97,8 @@ export async function extractNote(
     } catch {
       // Non-JSON error body; fall through to the generic message.
     }
-    // The server already retried transient failures (and fell back across
-    // providers); if the AI is still overloaded, say so calmly instead of a
-    // scary generic error.
+    // The server already retried transient failures; if the AI is still
+    // overloaded, say so calmly instead of a scary generic error.
     if (detail && /503|high demand|overloaded|UNAVAILABLE|RESOURCE_EXHAUSTED|capacity|rate limit/i.test(detail)) {
       return {
         ok: false,
