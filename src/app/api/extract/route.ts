@@ -11,8 +11,9 @@ import type { ExtractApiResponse } from "@/services/extraction";
 
 /**
  * POST /api/extract — correct one French note and extract vocabulary,
- * verbs and grammar from it. Server-side only: the Gemini key never
- * reaches the browser, and only a signed-in Clerk user can call this.
+ * verbs and grammar from it. Mistral is the primary provider (Gemini is an
+ * optional silent backup). Server-side only: API keys never reach the
+ * browser, and only a signed-in Clerk user can call this.
  *
  * The user's CEFR level and A1 conjugation stage come from Clerk
  * publicMetadata (set during onboarding) and steer which tense the verbs
@@ -45,16 +46,17 @@ export async function POST(req: Request) {
     );
   }
 
-  // GOOGLE_GENERATIVE_AI_API_KEY is the Vercel AI SDK's spelling; accept
-  // both so a key added under either name works.
-  const apiKey =
+  // Mistral is the primary extraction provider; Gemini (either env-var
+  // spelling) is kept only as a silent backup when its key is present.
+  const mistralKey = process.env.MISTRAL_API_KEY;
+  const geminiKey =
     process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) {
+  if (!mistralKey && !geminiKey) {
     return NextResponse.json(
       {
         code: "missing-key",
         error:
-          "Extraction needs a Google Gemini key. Add GEMINI_API_KEY in Vercel (Project → Settings → Environment Variables) or .env.local, then redeploy or restart. Free keys: aistudio.google.com.",
+          "Extraction needs a Mistral key. Add MISTRAL_API_KEY in Vercel (Project → Settings → Environment Variables) or .env.local, then redeploy or restart. Free keys: console.mistral.ai.",
       },
       { status: 503 }
     );
@@ -86,12 +88,12 @@ export async function POST(req: Request) {
 
   let raw: unknown;
   try {
-    raw = await callGemini(apiKey, text, level, stage);
+    raw = await callModel(mistralKey, geminiKey, text, level, stage);
   } catch (error) {
     // Log the full (secret-free) upstream error so Vercel Function logs show
-    // exactly what Gemini said, and pass a short sanitized detail to the UI
-    // so a hiccup is diagnosable without leaking the key or the note.
-    console.error("[extract] Gemini call failed:", error);
+    // exactly what the provider said, and pass a short sanitized detail to
+    // the UI so a hiccup is diagnosable without leaking the key or the note.
+    console.error("[extract] Model call failed:", error);
     const detail =
       error instanceof UpstreamError ? error.safeDetail : null;
     return NextResponse.json(
@@ -121,11 +123,11 @@ function redactSecrets(text: string): string {
   return text.replace(/AIza[0-9A-Za-z_-]{10,}/g, "AIza[redacted]");
 }
 
-/** A Gemini-side failure carrying a short, secret-free summary that the
- * route may safely include in its JSON error response. */
+/** An upstream (Mistral or Gemini) failure carrying a short, secret-free
+ * summary that the route may safely include in its JSON error response. */
 class UpstreamError extends Error {
   readonly safeDetail: string;
-  /** HTTP status Gemini answered with, when the failure was an HTTP error. */
+  /** HTTP status the provider answered with, when the failure was an HTTP error. */
   readonly status: number | null;
 
   constructor(message: string, safeDetail: string, status: number | null = null) {
@@ -136,14 +138,174 @@ class UpstreamError extends Error {
   }
 }
 
-// Default must be a current stable model that supports generateContent with
-// responseJsonSchema structured output; override with GEMINI_MODEL.
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+// Primary extraction model. Mistral is French-first, has reliable strict
+// JSON-schema output, and doesn't share Gemini's "high demand" 503 habit.
+// Override with MISTRAL_MODEL.
+const DEFAULT_MISTRAL_MODEL = "mistral-small-latest";
 
-// Google's moving alias for the current stable Flash model. Used as a
-// one-shot fallback when the configured model 404s (retired or renamed),
-// so extraction keeps working without waiting for a code change.
+// Gemini backup, used only when Mistral fails (or its key is absent) and a
+// Gemini key is configured. Override with GEMINI_MODEL.
+const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
+
+// Google's moving alias for the current stable Flash model, kept as the
+// last resort so the backup keeps working even if the default is retired.
 const FALLBACK_GEMINI_MODEL = "gemini-flash-latest";
+
+// How many times to retry one model on a transient failure (503 "high
+// demand", 429 rate limit) before moving on, and how long to wait between
+// tries: ~0.5s, 1s, 2s. Total worst-case backoff stays well under the
+// route's 60s budget.
+const MAX_TRANSIENT_RETRIES = 3;
+const RETRY_BACKOFF_MS = [500, 1000, 2000];
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Transient upstream failures worth retrying: overload/high-demand 503s,
+ * rate-limit 429s, and anything the provider labels UNAVAILABLE,
+ * RESOURCE_EXHAUSTED or over capacity. These usually clear in seconds. */
+function isTransient(error: UpstreamError): boolean {
+  if (error.status === 503 || error.status === 429) return true;
+  return /RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|overloaded|capacity/i.test(
+    error.message
+  );
+}
+
+/**
+ * Provider order: Mistral first (primary), Gemini second (silent backup,
+ * only when its key is configured). Each provider does its own transient
+ * retries; Gemini additionally walks its model fallback chain.
+ */
+async function callModel(
+  mistralKey: string | undefined,
+  geminiKey: string | undefined,
+  noteText: string,
+  level: CefrLevel,
+  stage: ConjugationStage
+): Promise<unknown> {
+  if (mistralKey) {
+    try {
+      return await callMistral(mistralKey, noteText, level, stage);
+    } catch (error) {
+      if (!geminiKey) throw error;
+      console.warn(
+        "[extract] Mistral failed; falling back to Gemini backup:",
+        error
+      );
+      return await callGemini(geminiKey, noteText, level, stage);
+    }
+  }
+  // No Mistral key yet (e.g. mid-migration): the route already guaranteed a
+  // Gemini key exists, so keep extraction alive on the backup.
+  console.warn(
+    "[extract] MISTRAL_API_KEY not set; using the Gemini backup. Add MISTRAL_API_KEY to use the primary provider."
+  );
+  return await callGemini(geminiKey as string, noteText, level, stage);
+}
+
+async function callMistral(
+  apiKey: string,
+  noteText: string,
+  level: CefrLevel,
+  stage: ConjugationStage
+): Promise<unknown> {
+  const model = process.env.MISTRAL_MODEL || DEFAULT_MISTRAL_MODEL;
+  for (let attempt = 0; attempt <= MAX_TRANSIENT_RETRIES; attempt++) {
+    try {
+      return await requestMistral(apiKey, model, noteText, level, stage);
+    } catch (error) {
+      if (
+        error instanceof UpstreamError &&
+        isTransient(error) &&
+        attempt < MAX_TRANSIENT_RETRIES
+      ) {
+        const delay = RETRY_BACKOFF_MS[attempt];
+        console.warn(
+          `[extract] Transient Mistral error (${error.status ?? "n/a"}) on "${model}", retry ${attempt + 1}/${MAX_TRANSIENT_RETRIES} in ${delay}ms.`
+        );
+        await sleep(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+  // Unreachable (the loop always returns or throws); satisfies TypeScript.
+  throw new Error("Mistral retries exhausted.");
+}
+
+async function requestMistral(
+  apiKey: string,
+  model: string,
+  noteText: string,
+  level: CefrLevel,
+  stage: ConjugationStage
+): Promise<unknown> {
+  const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt(level, stage) },
+        { role: "user", content: noteText },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "french_note_extraction",
+          schema: SCHEMA,
+          strict: true,
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    // Mistral error bodies vary: { message } or { error: { message } } for
+    // most errors, { detail: "Invalid API Key" } for auth. Pull a readable
+    // one-liner, keep the raw body for logs.
+    let upstreamMessage = "";
+    try {
+      const parsed = JSON.parse(body);
+      const m = parsed?.error?.message ?? parsed?.message ?? parsed?.detail;
+      if (typeof m === "string") upstreamMessage = m;
+    } catch {
+      // Non-JSON body; the raw text goes to the logs below.
+    }
+    throw new UpstreamError(
+      `Mistral ${response.status} for model "${model}": ${body.slice(0, 1000)}`,
+      `Mistral returned ${response.status}${
+        upstreamMessage ? `: ${upstreamMessage.slice(0, 300)}` : ""
+      }` +
+        (response.status === 404
+          ? ` (model "${model}" — check MISTRAL_MODEL)`
+          : ""),
+      response.status
+    );
+  }
+
+  const payload = await response.json();
+  const content = payload?.choices?.[0]?.message?.content;
+  if (typeof content !== "string" || !content) {
+    throw new UpstreamError(
+      `No content in Mistral response: ${JSON.stringify(payload).slice(0, 1000)}`,
+      "The model returned an empty response."
+    );
+  }
+  try {
+    return JSON.parse(content);
+  } catch {
+    throw new UpstreamError(
+      `Mistral returned non-JSON text: ${content.slice(0, 1000)}`,
+      "The model returned malformed JSON."
+    );
+  }
+}
 
 async function callGemini(
   apiKey: string,
@@ -151,28 +313,64 @@ async function callGemini(
   level: CefrLevel,
   stage: ConjugationStage
 ): Promise<unknown> {
-  const model = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
-  try {
-    return await requestGemini(apiKey, model, noteText, level, stage);
-  } catch (error) {
-    if (
-      error instanceof UpstreamError &&
-      error.status === 404 &&
-      model !== FALLBACK_GEMINI_MODEL
-    ) {
-      console.warn(
-        `[extract] Model "${model}" not found (404); retrying with "${FALLBACK_GEMINI_MODEL}".`
-      );
-      return await requestGemini(
-        apiKey,
+  // Fallback chain: GEMINI_MODEL env if set → gemini-3.6-flash → gemini-flash-latest.
+  const models = [
+    ...new Set(
+      [
+        process.env.GEMINI_MODEL,
+        DEFAULT_GEMINI_MODEL,
         FALLBACK_GEMINI_MODEL,
-        noteText,
-        level,
-        stage
-      );
+      ].filter((m): m is string => Boolean(m))
+    ),
+  ];
+
+  let lastError: unknown = null;
+  for (const [modelIndex, model] of models.entries()) {
+    const isLastModel = modelIndex === models.length - 1;
+    for (let attempt = 0; attempt <= MAX_TRANSIENT_RETRIES; attempt++) {
+      try {
+        return await requestGemini(apiKey, model, noteText, level, stage);
+      } catch (error) {
+        lastError = error;
+        if (!(error instanceof UpstreamError)) throw error;
+
+        // A 404 means this model id is dead for this key (retired/renamed);
+        // don't burn retries on it, go straight to the next model.
+        if (error.status === 404) {
+          if (isLastModel) throw error;
+          console.warn(
+            `[extract] Model "${model}" not found (404); falling back to "${models[modelIndex + 1]}".`
+          );
+          break;
+        }
+
+        if (isTransient(error)) {
+          if (attempt < MAX_TRANSIENT_RETRIES) {
+            const delay = RETRY_BACKOFF_MS[attempt];
+            console.warn(
+              `[extract] Transient Gemini error (${error.status ?? "n/a"}) on "${model}", retry ${attempt + 1}/${MAX_TRANSIENT_RETRIES} in ${delay}ms.`
+            );
+            await sleep(delay);
+            continue;
+          }
+          // Retries exhausted on this model; a different model may still be
+          // less busy, so fall through the chain before giving up.
+          if (isLastModel) throw error;
+          console.warn(
+            `[extract] "${model}" still failing after ${MAX_TRANSIENT_RETRIES} retries; trying "${models[modelIndex + 1]}".`
+          );
+          break;
+        }
+
+        // Non-transient, non-404 (bad request, blocked prompt, auth):
+        // another model won't fix it, surface immediately.
+        throw error;
+      }
     }
-    throw error;
   }
+  // Unreachable in practice (the loops always throw or return), but keeps
+  // TypeScript's control-flow analysis satisfied.
+  throw lastError ?? new Error("No Gemini model could be reached.");
 }
 
 async function requestGemini(
@@ -276,9 +474,10 @@ Extract only what the note actually contains. If the note has no French at all, 
 }
 
 /**
- * Structured-output JSON Schema for Gemini's responseJsonSchema (every
- * property required, additionalProperties false, null allowed via type
- * arrays). Enums and array lengths are re-checked in normalizeModelOutput
+ * Structured-output JSON Schema shared by Mistral (json_schema strict mode)
+ * and Gemini (responseJsonSchema): every property required,
+ * additionalProperties false, null allowed via type arrays. Enums and array
+ * lengths are re-checked in normalizeModelOutput
  * rather than encoded here, since the models support only a schema subset
  * and silently ignore what they don't.
  */
