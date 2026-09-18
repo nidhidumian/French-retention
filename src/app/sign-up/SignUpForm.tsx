@@ -14,6 +14,9 @@ import {
 } from "@/components/formControls";
 import { clerkErrorMessage } from "@/services/clerkErrors";
 
+/** Keep in sync with the Clerk Dashboard password policy (see README). */
+const PASSWORD_MIN_LENGTH = 8;
+
 /**
  * Custom Clerk sign-up flow (v7 "future" API): create the account with
  * email + name + password, verify the email with a one-time code, then
@@ -47,6 +50,12 @@ export function SignUpForm() {
     e.preventDefault();
     setError(null);
 
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(
+        `Your password needs at least ${PASSWORD_MIN_LENGTH} characters.`
+      );
+      return;
+    }
     if (password !== retypePassword) {
       setError("The two passwords don't match.");
       return;
@@ -171,24 +180,42 @@ export function SignUpForm() {
             />
           </Field>
         </div>
-        <Field label="Password">
-          <TextInput
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-            required
-          />
-        </Field>
-        <Field label="Retype password">
-          <TextInput
-            type="password"
-            value={retypePassword}
-            onChange={(e) => setRetypePassword(e.target.value)}
-            autoComplete="new-password"
-            required
-          />
-        </Field>
+        <div>
+          <Field label="Password">
+            <TextInput
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              minLength={PASSWORD_MIN_LENGTH}
+              required
+            />
+          </Field>
+          <p className="mono-label mt-2 text-[0.65rem] text-cream-dim">
+            At least {PASSWORD_MIN_LENGTH} characters.
+          </p>
+        </div>
+        <div>
+          <Field label="Retype password">
+            <TextInput
+              type="password"
+              value={retypePassword}
+              onChange={(e) => setRetypePassword(e.target.value)}
+              autoComplete="new-password"
+              required
+            />
+          </Field>
+          {/* Live match feedback while retyping; aria-live so screen
+              readers hear the state change too. */}
+          <p aria-live="polite" className="mono-label mt-2 text-[0.65rem]">
+            {retypePassword.length === 0 ? null : password ===
+              retypePassword ? (
+              <span className="text-pink-pale">✓ Passwords match</span>
+            ) : (
+              <span className="text-coral">✗ Passwords don&apos;t match</span>
+            )}
+          </p>
+        </div>
 
         <CheckboxRow checked={acceptedTerms} onChange={setAcceptedTerms}>
           I accept the{" "}
