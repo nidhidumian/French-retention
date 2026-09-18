@@ -80,6 +80,28 @@ export function BackLink({ onClick }: { onClick: () => void }) {
   );
 }
 
+/** Quieter sibling of PrimaryPill: outlined pill for recovery actions
+ * (retry, undo) that should be findable without competing with content. */
+export function SecondaryPill({
+  children,
+  onClick,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`mono-label rounded-full border border-edge px-6 py-3 text-[0.75rem] text-cream transition-colors hover:border-pink-hot/60 hover:text-pink-pale ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
 /** The one loud thing on a screen: filled pink pill for the primary action. */
 export function PrimaryPill({
   children,

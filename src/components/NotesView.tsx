@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Library, MoveRight, Plus, Sparkles, Trash2 } from "lucide-react";
+import {
+  Library,
+  MoveRight,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import {
   addNote,
   deleteNote,
@@ -9,7 +16,13 @@ import {
   type Note,
 } from "@/services/notes";
 import { extractNote } from "@/services/extraction";
-import { BackLink, Kicker, PrimaryPill, ScreenHeader } from "./editorial";
+import {
+  BackLink,
+  Kicker,
+  PrimaryPill,
+  ScreenHeader,
+  SecondaryPill,
+} from "./editorial";
 
 export type NotesScreen = "home" | "add" | "library" | "extract";
 
@@ -74,7 +87,9 @@ export function NotesView({
     setNotes(result.notes);
     setDraft("");
     setError(null);
-    // listNotes sorts newest first, so the note just saved is at the top.
+    // Extraction is automatic: every saved note goes straight to /api/extract,
+    // no Extract button. listNotes sorts newest first, so the note just saved
+    // is at the top.
     void runExtraction(result.notes[0]);
   }
 
@@ -178,22 +193,37 @@ export function NotesView({
                 <p className="mt-3 whitespace-pre-wrap text-[1.05rem] leading-relaxed text-cream">
                   {note.text}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (note.extraction) {
+                {note.extraction ? (
+                  <button
+                    type="button"
+                    onClick={() => {
                       setActiveNote(note);
                       setExtractError(null);
                       setScreen("extract");
-                    } else {
-                      void runExtraction(note);
-                    }
-                  }}
-                  className="mono-label mt-4 flex items-center gap-1.5 text-[0.7rem] text-pink-hot transition-colors hover:text-pink-pale"
-                >
-                  <Sparkles strokeWidth={1.6} className="h-3.5 w-3.5" />
-                  {note.extraction ? "See corrections & extracts" : "Extract"}
-                </button>
+                    }}
+                    className="mono-label mt-4 flex items-center gap-1.5 text-[0.7rem] text-pink-hot transition-colors hover:text-pink-pale"
+                  >
+                    <Sparkles strokeWidth={1.6} className="h-3.5 w-3.5" />
+                    See corrections &amp; extracts
+                  </button>
+                ) : (
+                  // Extraction runs automatically on save, so a note without
+                  // one means that run failed — offer a quiet retry, not a
+                  // primary Extract CTA.
+                  <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span className="mono-label text-[0.7rem] text-cream-dim">
+                      Extraction didn&apos;t finish
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void runExtraction(note)}
+                      className="mono-label flex items-center gap-1.5 text-[0.7rem] text-cream-dim transition-colors hover:text-cream"
+                    >
+                      <RotateCcw strokeWidth={1.6} className="h-3.5 w-3.5" />
+                      Try again
+                    </button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -237,9 +267,10 @@ export function NotesView({
 }
 
 /**
- * What happens after a note is saved (or Extract is tapped): a loading
- * beat while the note is corrected and mined, then the corrected note,
- * every fix with its why, and how much landed in the libraries.
+ * What happens after a note is saved (extraction starts automatically) or
+ * Try again is tapped: a loading beat while the note is corrected and
+ * mined, then the corrected note, every fix with its why, and how much
+ * landed in the libraries. On failure: the error plus a secondary retry.
  */
 function ExtractScreen({
   note,
@@ -286,12 +317,13 @@ function ExtractScreen({
           {error.message}
         </p>
         <p className="mt-3 max-w-lg text-[1.02rem] leading-relaxed text-cream-dim">
-          Your note is safe on the shelf — extraction can run on it any time.
+          Your note is safe on the shelf — you can retry from here or from the
+          library any time.
         </p>
         {!error.missingKey && (
-          <PrimaryPill onClick={onRetry} className="mt-7">
+          <SecondaryPill onClick={onRetry} className="mt-7">
             Try again
-          </PrimaryPill>
+          </SecondaryPill>
         )}
       </section>
     );
